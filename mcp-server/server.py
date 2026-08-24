@@ -102,7 +102,7 @@ def add_workout(routine: str, entries_json: str, plan: str = "", day: str = "", 
         return "entries_json must be a non-empty JSON list."
     w = {
         "date": day or _date.today().isoformat(),
-        "plan": plan or d.get("activePlan", "2"),
+        "plan": plan or d.get("activePlan") or next(iter(sorted(d.get("plans", {}))), "1"),
         "routine": routine,
         "duration_min": duration_min or "",
         "entries": entries,
