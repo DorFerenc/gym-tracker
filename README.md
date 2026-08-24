@@ -4,6 +4,32 @@ Personal workout tracker PWA (Hebrew) + MCP server for AI access.
 - AI access: mcp-server/server.py reads/updates gym-backup.json (exported from the app).
 - Full setup is automated: open this folder in Claude Code and paste PROMPT.txt.
 
+## How to use
+
+### On the phone (the app)
+1. Open the site (GitHub Pages URL) → browser menu → **Add to Home Screen**. It works offline from then on.
+2. First time: go to **ניהול → תוכניות אימון** and build your plan — **+ אימון לתוכנית** adds a routine
+   (A/B/C…, you give it a name like "Push"), **+ תרגיל** adds exercises to it (name · sets · reps · weight · rest).
+   Already have data? **ניהול → שחזור JSON** imports a `gym-backup.json` and replaces everything.
+3. Training (**אימון** tab): the app suggests the next routine in rotation and pre-fills each exercise
+   with what you lifted last time. Type weight/reps, hit **✓** per set — the rest timer starts itself
+   (beep + vibration when done). **סיים ושמור אימון** saves the session; an unfinished session survives
+   closing the app and is restored on the next open.
+4. **היסטוריה** tab: every saved workout with all sets; expand to view or delete.
+5. Backups (**ניהול → נתונים**): **גיבוי JSON** = full export (plans + history), **ייצוא CSV** = spreadsheet
+   of all sets, **ייבוא Hevy CSV** = migrate from the Hevy app.
+
+### With AI (the MCP server)
+1. In the app: **ניהול → גיבוי JSON**, put the file at this repo's root as `gym-backup.json`.
+2. Register `mcp-server/server.py` (see CLAUDE.md Task 2, or `.mcp.json` for Claude Code) — the AI can then
+   summarize progress, log workouts, and edit plans via tools like `get_summary`, `add_workout`, `exercise_progress`.
+3. To get AI changes back on the phone: transfer the updated `gym-backup.json` to the phone and
+   **ניהול → שחזור JSON**. (No auto-sync — the file is the bridge.)
+
+### Local development
+Serve the folder (`python -m http.server`) and open `http://localhost:8000` — it's a single
+self-contained `index.html`, no build step.
+
 ## Privacy
 - All workout data lives only in the user's own browser storage (localStorage) on their device.
   The site is static: no server, no accounts, no analytics, no cookies, no network calls with user data.
