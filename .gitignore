@@ -1,0 +1,5 @@
+gym-backup.json
+.venv/
+.mcp.json
+.claude/
+__pycache__/

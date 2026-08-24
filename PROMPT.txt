@@ -1,0 +1,1 @@
+Read CLAUDE.md and do Task 1, Task 2 and Task 3. Do everything yourself; only stop if gh is not authenticated or a command fails.

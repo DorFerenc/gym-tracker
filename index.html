@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#131416">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; manifest-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Gym Tracker</title>
+<style>
+  :root{
+    --bg:#131416; --card:#1c1e21; --line:#2b2e33;
+    --ink:#eceff1; --mute:#98a0a8; --accent:#f5b301; --accent-ink:#141210;
+    --ok:#4cc38a; --danger:#e5484d;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,"Segoe UI",Roboto,"Heebo",Arial,sans-serif;
+    font-size:16px; padding:14px 12px 150px;
+  }
+  h1{font-size:15px; letter-spacing:.14em; color:var(--mute); font-weight:600; margin:2px 2px 12px;}
+  h1 b{color:var(--accent); letter-spacing:0;}
+  .viewtabs{display:flex; gap:6px; margin-bottom:14px;}
+  .vtab{flex:1; text-align:center; padding:9px 0; border-radius:11px; font-size:13.5px; font-weight:700;
+    background:var(--card); border:1px solid var(--line); color:var(--mute); cursor:pointer; user-select:none;}
+  .vtab.on{color:var(--accent); border-color:var(--accent);}
+  select{
+    background:var(--card); border:1px solid var(--line); border-radius:11px; color:var(--ink);
+    font-size:15px; padding:9px 10px; width:100%;
+  }
+  .next{background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;}
+  .next .lbl{color:var(--mute); font-size:13px;}
+  .next .val{font-size:22px; font-weight:800; color:var(--accent); font-variant-numeric:tabular-nums;}
+  .planrow{margin-bottom:12px;}
+  .tabs{display:flex; gap:8px; margin-bottom:14px;}
+  .tab{flex:1; text-align:center; padding:11px 0; border-radius:12px; font-weight:700;
+    background:var(--card); border:1px solid var(--line); color:var(--mute); cursor:pointer; user-select:none;}
+  .tab.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+  .tab small{display:block; font-weight:400; font-size:11px; margin-top:2px;}
+  .ex{background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:12px 12px 10px; margin-bottom:12px; border-inline-start:3px solid var(--accent);}
+  .ex h2{margin:0; font-size:16px;}
+  .topline{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .rest-cfg{display:flex; align-items:center; gap:4px; color:var(--mute); font-size:12px; flex:none;}
+  .rest-cfg input{width:44px; background:#232529; border:1px solid var(--line); border-radius:8px;
+    color:var(--ink); font-size:13px; padding:4px 2px; text-align:center;}
+  .ex .meta{color:var(--mute); font-size:12.5px; margin:3px 0 2px;}
+  .ex .note{color:var(--mute); font-size:12.5px; margin:0 0 8px;}
+  .ex .prev{font-size:12.5px; color:var(--ok); margin:0 0 8px; font-variant-numeric:tabular-nums;}
+  .sets{display:flex; flex-direction:column; gap:6px;}
+  .set{display:flex; align-items:center; gap:7px; border-radius:10px; padding:2px;}
+  .set.done input{opacity:.55;}
+  .set .n{width:18px; color:var(--mute); font-size:13px; text-align:center;}
+  .set input{flex:1; min-width:0; background:#232529; border:1px solid var(--line); border-radius:10px;
+    color:var(--ink); font-size:17px; padding:9px 6px; text-align:center; font-variant-numeric:tabular-nums;}
+  .set input:focus{outline:none; border-color:var(--accent);}
+  .set .u{color:var(--mute); font-size:11px; width:22px;}
+  .chk{width:46px; height:42px; flex:none; border-radius:10px; border:1px solid var(--line);
+    background:#232529; color:var(--mute); font-size:20px; font-weight:800; cursor:pointer;}
+  .set.done .chk{background:var(--ok); border-color:var(--ok); color:#0c1a13;}
+  .addset{margin-top:8px; background:none; border:1px dashed var(--line); color:var(--mute);
+    border-radius:10px; padding:7px; width:100%; font-size:13px; cursor:pointer;}
+  .restbar{position:fixed; bottom:76px; right:12px; left:12px; z-index:8;
+    background:var(--accent); color:var(--accent-ink); border-radius:14px;
+    padding:12px 16px; display:none; align-items:center; justify-content:space-between;
+    font-weight:800; box-shadow:0 6px 24px rgba(0,0,0,.5);}
+  .restbar.show{display:flex;}
+  .restbar .t{font-size:26px; font-variant-numeric:tabular-nums;}
+  .restbar .skip{font-size:13px; font-weight:700; background:rgba(0,0,0,.15); border:none;
+    color:var(--accent-ink); border-radius:10px; padding:8px 14px; cursor:pointer;}
+  .bar{position:fixed; bottom:0; right:0; left:0; display:flex; gap:10px;
+    padding:12px; background:linear-gradient(transparent, var(--bg) 30%); z-index:7;}
+  .btn{flex:1; padding:14px 0; border-radius:14px; border:none; font-size:16px; font-weight:800; cursor:pointer;}
+  .btn.save{background:var(--accent); color:var(--accent-ink);}
+  .btn.csv{background:var(--card); color:var(--ink); border:1px solid var(--line); flex:.55;}
+  .toast{position:fixed; top:14px; right:50%; transform:translateX(50%);
+    background:var(--ok); color:#0c1a13; font-weight:700; padding:10px 18px; border-radius:12px;
+    opacity:0; transition:opacity .25s; pointer-events:none; z-index:9; max-width:88vw; text-align:center;}
+  .toast.err{background:var(--danger); color:#fff;}
+  .toast.show{opacity:1;}
+  .count{color:var(--mute); font-size:12px; text-align:center; margin-top:4px;}
+  /* history */
+  .hist{background:var(--card); border:1px solid var(--line); border-radius:14px; margin-bottom:10px; padding:2px 12px;}
+  .hist summary{padding:10px 0; cursor:pointer; display:flex; justify-content:space-between; align-items:center; list-style:none;}
+  .hist summary::-webkit-details-marker{display:none;}
+  .hist .hd{font-weight:700;}
+  .hist .hm{color:var(--mute); font-size:12.5px;}
+  .hist .body{padding:4px 0 10px; font-size:14px; color:var(--ink);}
+  .hist .body div{margin:3px 0; font-variant-numeric:tabular-nums;}
+  .hist .body b{font-weight:600;}
+  .hist .del{color:var(--danger); background:none; border:none; font-size:12.5px; padding:6px 0; cursor:pointer;}
+  /* settings / editor */
+  .sec{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:12px;}
+  .sec h3{margin:0 0 10px; font-size:15px;}
+  .sec .row{display:flex; gap:8px; margin-bottom:8px;}
+  .sbtn{background:#232529; border:1px solid var(--line); color:var(--ink); border-radius:11px;
+    padding:11px 12px; font-size:14px; font-weight:700; cursor:pointer; width:100%;}
+  .sbtn.warn{color:var(--danger);}
+  .edx{border-top:1px solid var(--line); padding:9px 0;}
+  .edx .row input{background:#232529; border:1px solid var(--line); border-radius:9px; color:var(--ink);
+    font-size:14px; padding:8px 6px; min-width:0;}
+  .edx .nm{flex:2.2;} .edx .sm{flex:.8; text-align:center;} 
+  .edx .delx{color:var(--danger); background:none; border:none; font-size:16px; cursor:pointer; flex:none; width:30px;}
+  .hint{color:var(--mute); font-size:12.5px; margin:6px 0 0;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<h1>INTEL GYM · <b>מעקב אימונים</b></h1>
+
+<div class="viewtabs">
+  <div class="vtab on" data-v="workout" onclick="setView('workout')">אימון</div>
+  <div class="vtab" data-v="history" onclick="setView('history')">היסטוריה</div>
+  <div class="vtab" data-v="settings" onclick="setView('settings')">ניהול</div>
+</div>
+
+<div id="view-workout">
+  <div class="next">
+    <span class="lbl" id="statusLbl">האימון הבא</span>
+    <span class="val" id="statusVal">A</span>
+  </div>
+  <div class="planrow"><select id="planSel" onchange="switchPlan(this.value)"></select></div>
+  <div class="tabs" id="tabs"></div>
+  <div id="exercises"></div>
+  <div class="count" id="count"></div>
+</div>
+
+<div id="view-history" class="hidden">
+  <div id="histList"></div>
+</div>
+
+<div id="view-settings" class="hidden">
+  <div class="sec">
+    <h3>תוכניות אימון</h3>
+    <div class="row"><select id="editPlanSel" onchange="renderEditor()"></select></div>
+    <div id="editor"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="sbtn" onclick="addRoutine()">+ אימון לתוכנית</button>
+      <button class="sbtn" onclick="addPlan()">+ תוכנית חדשה</button>
+    </div>
+  </div>
+  <div class="sec">
+    <h3>נתונים</h3>
+    <div class="row">
+      <button class="sbtn" onclick="exportCSV()">ייצוא CSV</button>
+      <button class="sbtn" onclick="exportJSON()">גיבוי JSON</button>
+    </div>
+    <div class="row">
+      <button class="sbtn" onclick="document.getElementById('hevyFile').click()">ייבוא Hevy CSV</button>
+      <button class="sbtn" onclick="document.getElementById('jsonFile').click()">שחזור JSON</button>
+    </div>
+    <input type="file" id="hevyFile" accept=".csv" class="hidden" onchange="importHevy(this.files[0])">
+    <input type="file" id="jsonFile" accept=".json" class="hidden" onchange="importJSON(this.files[0])">
+    <p class="hint">גיבוי JSON = כל הדאטה (תוכניות + היסטוריה). זה גם הפורמט שחיבור AI/MCP יקרא ויעדכן.</p>
+  </div>
+</div>
+
+<div class="restbar" id="restbar">
+  <span>מנוחה</span>
+  <span class="t" id="restT">1:30</span>
+  <button class="skip" onclick="skipRest()">דלג</button>
+</div>
+
+<div class="bar" id="mainBar">
+  <button class="btn save" onclick="saveWorkout()">סיים ושמור אימון</button>
+  <button class="btn csv" onclick="exportCSV()">CSV</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- default data ----------
+   Intentionally empty: no personal data ships with the app.
+   Each user's plans + history live only in their own browser storage;
+   existing data comes in via ניהול → שחזור JSON. */
+const DEFAULT_PLANS = {
+  "1": { name: "התוכנית שלי", routines: {
+    A: { name: "", ex: [] },
+  }},
+};
+
+/* ---------- storage adapter: Claude artifact OR standalone ---------- */
+const IS_CLAUDE = typeof window.storage !== "undefined";
+const store = {
+  async get(k){
+    if(IS_CLAUDE){ try{ const r=await window.storage.get(k); return r&&r.value?JSON.parse(r.value):null; }catch(e){ return null; } }
+    try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; }
+  },
+  async set(k,v){
+    if(IS_CLAUDE){ try{ const r=await window.storage.set(k, JSON.stringify(v)); return !!r; }catch(e){ return false; } }
+    try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; }
+  },
+  async del(k){
+    if(IS_CLAUDE){ try{ await window.storage.delete(k); }catch(e){} return; }
+    try{ localStorage.removeItem(k); }catch(e){}
+  }
+};
+const DATA="gym-data-v3", LOG="gym-log-v1", DRAFT="gym-draft-v1", REST="gym-rest-v1";
+
+/* ---------- state ---------- */
+let plans={}, activePlan="1", restCfg={}, history=[];
+let session={plan:null, routine:null, start:null, state:{}};
+let currentRoutine="A", restEnd=null, restDone=false, view="workout";
+
+const $=id=>document.getElementById(id);
+function toast(msg, err){
+  const t=$("toast"); t.textContent=msg; t.className="toast show"+(err?" err":"");
+  setTimeout(()=>t.className="toast"+(err?" err":""), 2600);
+}
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const norm=s=>String(s).trim().toLowerCase();
+
+/* ---------- init ---------- */
+async function init(){
+  const data=await store.get(DATA);
+  if(data){ plans=data.plans||DEFAULT_PLANS; activePlan=data.activePlan||Object.keys(plans)[0]; restCfg=data.restCfg||{}; }
+  else{
+    plans=DEFAULT_PLANS; activePlan=Object.keys(plans)[0];
+    restCfg=(await store.get(REST))||{};
+    await store.set(DATA,{plans,activePlan,restCfg});
+  }
+  if(!plans[activePlan]) activePlan=Object.keys(plans)[0];
+  history=(await store.get(LOG))||[];
+  history.forEach(h=>{ if(!h.plan) h.plan=activePlan; });
+  const d=await store.get(DRAFT);
+  if(d && d.start){ session=d; activePlan=session.plan||activePlan; currentRoutine=session.routine||firstRoutine(); toast("אימון פתוח שוחזר"); }
+  else currentRoutine=nextRoutine();
+  renderWorkout(); updateStatus();
+  setInterval(tick, 500);
+  if("serviceWorker" in navigator && location.protocol.startsWith("http"))
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+function persistData(){ store.set(DATA,{plans,activePlan,restCfg}); }
+function routineKeys(p){ return Object.keys(plans[p].routines).sort(); }
+function firstRoutine(){ return routineKeys(activePlan)[0]; }
+function nextRoutine(){
+  const keys=routineKeys(activePlan);
+  for(let i=history.length-1;i>=0;i--){
+    const h=history[i];
+    if(h.plan===activePlan && keys.includes(h.routine))
+      return keys[(keys.indexOf(h.routine)+1)%keys.length];
+  }
+  return keys[0];
+}
+function lastEntry(name){
+  const n=norm(name);
+  for(let i=history.length-1;i>=0;i--){
+    const e=(history[i].entries||[]).find(x=>norm(x.name)===n);
+    if(e) return {date:history[i].date, sets:e.sets};
+  }
+  return null;
+}
+
+/* ---------- views ---------- */
+function setView(v){
+  view=v;
+  document.querySelectorAll(".vtab").forEach(t=>t.classList.toggle("on",t.dataset.v===v));
+  $("view-workout").classList.toggle("hidden",v!=="workout");
+  $("view-history").classList.toggle("hidden",v!=="history");
+  $("view-settings").classList.toggle("hidden",v!=="settings");
+  $("mainBar").style.display = v==="workout" ? "flex" : "none";
+  if(v==="history") renderHistory();
+  if(v==="settings"){ renderPlanSelects(); renderEditor(); }
+  window.scrollTo(0,0);
+}
+
+/* ---------- workout view ---------- */
+function renderPlanSelects(){
+  const opts=Object.keys(plans).map(p=>`<option value="${p}">${esc(plans[p].name)}</option>`).join("");
+  $("planSel").innerHTML=opts; $("planSel").value=activePlan;
+  $("editPlanSel").innerHTML=opts;
+  if(!$("editPlanSel").value) $("editPlanSel").value=activePlan;
+}
+function switchPlan(p){
+  if(session.start){ $("planSel").value=activePlan; toast("סיים או שמור את האימון הפתוח קודם", true); return; }
+  activePlan=p; session={plan:null,routine:null,start:null,state:{}};
+  currentRoutine=nextRoutine(); persistData(); renderWorkout(); updateStatus();
+}
+function stateKey(r,i){ return r+"|"+i; }
+function getState(r,i,ex){
+  const k=stateKey(r,i);
+  if(!session.state[k]){
+    const prev=lastEntry(ex.n);
+    const n=prev?prev.sets.length:ex.sets;
+    const sets=[];
+    for(let j=0;j<n;j++){
+      const p=prev?prev.sets[j]:null;
+      sets.push({w:p?p.w:ex.w, r:p&&p.r!==""?p.r:ex.rep, done:false});
+    }
+    session.state[k]={sets};
+  }
+  return session.state[k];
+}
+function restFor(ex){ return restCfg[norm(ex.n)]||ex.rest||90; }
+
+function renderWorkout(){
+  renderPlanSelects();
+  const rKeys=routineKeys(activePlan);
+  if(!rKeys.includes(currentRoutine)) currentRoutine=rKeys[0];
+  $("tabs").innerHTML=rKeys.map(r=>
+    `<div class="tab ${r===currentRoutine?"on":""}" onclick="switchTab('${r}')">${r}<small>${esc(plans[activePlan].routines[r].name||"")}</small></div>`
+  ).join("");
+  $("exercises").innerHTML=plans[activePlan].routines[currentRoutine].ex.map((ex,xi)=>{
+    const st=getState(currentRoutine,xi,ex);
+    const prev=lastEntry(ex.n);
+    const prevTxt=prev
+      ? "פעם קודמת ("+prev.date.slice(5).replace("-",".")+"): "+prev.sets.map(s=>(s.w||"BW")+"×"+s.r).join(", ")
+      : "אימון ראשון — משקל מוצע: "+(ex.w||"משקל גוף");
+    const rows=st.sets.map((s,i)=>`
+      <div class="set ${s.done?"done":""}" id="row-${xi}-${i}">
+        <span class="n">${i+1}</span>
+        <input type="number" inputmode="decimal" step="0.5" placeholder="משקל" value="${s.w}" oninput="upd(${xi},${i},'w',this.value)">
+        <span class="u">ק"ג</span>
+        <input type="number" inputmode="numeric" placeholder="חזרות" value="${s.r}" oninput="upd(${xi},${i},'r',this.value)">
+        <button class="chk" onclick="toggleDone(${xi},${i})">✓</button>
+      </div>`).join("");
+    return `<div class="ex">
+      <div class="topline">
+        <h2>${esc(ex.n)}</h2>
+        <span class="rest-cfg">מנוחה <input type="number" inputmode="numeric" value="${restFor(ex)}" onchange="setRestCfg('${esc(norm(ex.n))}',this.value)"> שנ'</span>
+      </div>
+      <div class="meta">${ex.sets}×${esc(ex.reps)}</div>
+      ${ex.note?`<div class="note">${esc(ex.note)}</div>`:""}
+      <div class="prev">${prevTxt}</div>
+      <div class="sets">${rows}</div>
+      <button class="addset" onclick="addSet(${xi})">+ סט</button>
+    </div>`;
+  }).join("")||'<p class="hint" style="text-align:center;padding:18px 8px">אין תרגילים באימון הזה עדיין.<br>הוסף אותם ב<b>ניהול → תוכניות אימון</b>, או שחזר גיבוי JSON קיים.</p>';
+  $("count").textContent=history.length?history.length+" אימונים שמורים":"";
+}
+function switchTab(r){ currentRoutine=r; renderWorkout(); window.scrollTo(0,0); }
+function exAt(xi){ return plans[activePlan].routines[currentRoutine].ex[xi]; }
+function upd(xi,i,f,v){ getState(currentRoutine,xi,exAt(xi)).sets[i][f]=v; persistDraft(); }
+function setRestCfg(name,v){ restCfg[name]=Math.max(10,parseInt(v)||60); persistData(); }
+function toggleDone(xi,i){
+  const ex=exAt(xi), st=getState(currentRoutine,xi,ex), s=st.sets[i];
+  s.done=!s.done;
+  $("row-"+xi+"-"+i).classList.toggle("done",s.done);
+  if(s.done){
+    if(!session.start){ session.start=Date.now(); session.plan=activePlan; session.routine=currentRoutine; updateStatus(); }
+    startRest(restFor(ex));
+  }
+  persistDraft();
+}
+function addSet(xi){
+  const ex=exAt(xi), st=getState(currentRoutine,xi,ex);
+  const last=st.sets[st.sets.length-1];
+  st.sets.push({w:last?last.w:ex.w, r:ex.rep, done:false});
+  persistDraft(); renderWorkout();
+}
+let draftTimer=null;
+function persistDraft(){
+  if(!session.start) return;
+  clearTimeout(draftTimer);
+  draftTimer=setTimeout(()=>store.set(DRAFT,session), 600);
+}
+function startRest(sec){ restEnd=Date.now()+sec*1000; restDone=false; $("restbar").classList.add("show"); }
+function skipRest(){ restEnd=null; $("restbar").classList.remove("show"); }
+function beep(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    [0,0.25].forEach(t=>{
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value=880; g.gain.value=0.25;
+      o.start(ctx.currentTime+t); o.stop(ctx.currentTime+t+0.15);
+    });
+  }catch(e){}
+}
+function fmt(ms){ const s=Math.max(0,Math.ceil(ms/1000)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+function updateStatus(){
+  if(session.start){ $("statusLbl").textContent="אימון "+(session.routine||currentRoutine)+" פעיל"; }
+  else{ $("statusLbl").textContent="האימון הבא"; $("statusVal").textContent=nextRoutine(); }
+}
+function tick(){
+  if(session.start) $("statusVal").textContent=fmt(Date.now()-session.start);
+  if(restEnd){
+    const left=restEnd-Date.now();
+    $("restT").textContent=fmt(left);
+    if(left<=0 && !restDone){
+      restDone=true; beep();
+      if(navigator.vibrate) navigator.vibrate([200,100,200]);
+      setTimeout(skipRest, 1500);
+    }
+  }
+}
+async function saveWorkout(){
+  const entries=[];
+  plans[activePlan].routines[currentRoutine].ex.forEach((ex,xi)=>{
+    const st=session.state[stateKey(currentRoutine,xi)];
+    if(!st) return;
+    const sets=st.sets.filter(s=>s.done&&s.r!=="").map(s=>({w:s.w,r:s.r}));
+    if(sets.length) entries.push({name:ex.n, sets});
+  });
+  if(!entries.length){ toast("סמן ✓ לפחות על סט אחד", true); return; }
+  const d=new Date();
+  const date=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  const dur=session.start?Math.max(1,Math.round((Date.now()-session.start)/60000)):"";
+  history.push({date, plan:activePlan, routine:currentRoutine, duration_min:dur, entries});
+  const ok=await store.set(LOG,history);
+  if(!ok){ history.pop(); toast("השמירה נכשלה — האימון לא אבד, נסה שוב", true); return; }
+  await store.del(DRAFT);
+  session={plan:null,routine:null,start:null,state:{}};
+  skipRest();
+  toast("נשמר"+(dur?" · "+dur+" דקות":""));
+  currentRoutine=nextRoutine();
+  renderWorkout(); updateStatus();
+}
+
+/* ---------- history view ---------- */
+function renderHistory(){
+  if(!history.length){ $("histList").innerHTML='<p class="hint">אין עדיין אימונים.</p>'; return; }
+  $("histList").innerHTML=history.slice().reverse().map((h,ri)=>{
+    const idx=history.length-1-ri;
+    const planName=plans[h.plan]?plans[h.plan].name:(h.plan==="hevy"?"Hevy import":h.plan);
+    const nSets=h.entries.reduce((a,e)=>a+e.sets.length,0);
+    const body=h.entries.map(e=>`<div><b>${esc(e.name)}</b>: ${e.sets.map(s=>(s.w||"BW")+"×"+s.r).join(", ")}</div>`).join("");
+    return `<details class="hist">
+      <summary>
+        <span class="hd">${h.date} · ${esc(h.routine)}</span>
+        <span class="hm">${esc(planName)}${h.duration_min?" · "+h.duration_min+" דק'":""} · ${nSets} סטים</span>
+      </summary>
+      <div class="body">${body}
+        <button class="del" onclick="delWorkout(${idx})">מחק אימון</button>
+      </div>
+    </details>`;
+  }).join("");
+}
+async function delWorkout(idx){
+  if(!confirm("למחוק את האימון הזה?")) return;
+  history.splice(idx,1);
+  await store.set(LOG,history);
+  renderHistory(); toast("נמחק");
+}
+
+/* ---------- editor ---------- */
+function renderEditor(){
+  const p=$("editPlanSel").value||activePlan;
+  const plan=plans[p]; if(!plan){ $("editor").innerHTML=""; return; }
+  let html=`<div class="row"><input class="nm" style="flex:1;background:#232529;border:1px solid var(--line);border-radius:9px;color:var(--ink);padding:8px" value="${esc(plan.name)}" onchange="plans['${p}'].name=this.value;persistData();renderPlanSelects()"></div>`;
+  Object.keys(plan.routines).sort().forEach(r=>{
+    const rt=plan.routines[r];
+    html+=`<h3 style="margin:12px 0 4px;display:flex;align-items:center">${r} · <input style="background:none;border:none;color:var(--accent);font-size:15px;font-weight:700;width:100px;flex:1" value="${esc(rt.name||"")}" onchange="plans['${p}'].routines['${r}'].name=this.value;persistData()"><button class="delx" onclick="delRoutine('${p}','${r}')" title="מחק אימון">✕</button></h3>`;
+    rt.ex.forEach((ex,i)=>{
+      html+=`<div class="edx">
+        <div class="row">
+          <input class="nm" value="${esc(ex.n)}" onchange="edEx('${p}','${r}',${i},'n',this.value)">
+          <button class="delx" onclick="delEx('${p}','${r}',${i})">✕</button>
+        </div>
+        <div class="row">
+          <input class="sm" type="number" value="${ex.sets}" onchange="edEx('${p}','${r}',${i},'sets',parseInt(this.value)||3)" title="סטים">
+          <input class="sm" value="${esc(ex.reps)}" onchange="edEx('${p}','${r}',${i},'reps',this.value)" title="חזרות">
+          <input class="sm" type="number" step="0.5" value="${ex.w}" onchange="edEx('${p}','${r}',${i},'w',parseFloat(this.value)||0)" title="משקל">
+          <input class="sm" type="number" value="${ex.rest}" onchange="edEx('${p}','${r}',${i},'rest',parseInt(this.value)||60)" title="מנוחה">
+        </div>
+      </div>`;
+    });
+    html+=`<button class="sbtn" style="margin-top:6px" onclick="addEx('${p}','${r}')">+ תרגיל ל-${r}</button>`;
+  });
+  html+=`<p class="hint">שדות שורה שנייה: סטים · חזרות · משקל · מנוחה (שנ')</p>`;
+  $("editor").innerHTML=html;
+}
+function edEx(p,r,i,f,v){ plans[p].routines[r].ex[i][f]=v; if(f==="reps"){ const m=String(v).match(/\d+/); if(m) plans[p].routines[r].ex[i].rep=parseInt(m[0]); } persistData(); }
+function delEx(p,r,i){ if(!confirm("למחוק את התרגיל?")) return; plans[p].routines[r].ex.splice(i,1); persistData(); renderEditor(); }
+function addEx(p,r){ plans[p].routines[r].ex.push({n:"תרגיל חדש",sets:3,reps:"10",w:20,rep:10,rest:60,note:""}); persistData(); renderEditor(); }
+function addRoutine(){
+  const p=$("editPlanSel").value||activePlan;
+  const name=prompt("שם האימון החדש (למשל Push):","");
+  if(name===null) return;
+  const keys=Object.keys(plans[p].routines);
+  let i=0, letter;
+  do{ letter=String.fromCharCode(65+i); i++; }while(keys.includes(letter)&&i<26);
+  if(keys.includes(letter)){ toast("אי אפשר להוסיף — כל האותיות תפוסות", true); return; }
+  plans[p].routines[letter]={name:name.trim(), ex:[]};
+  if(p===activePlan && !session.start) currentRoutine=letter;
+  persistData(); renderEditor(); renderWorkout(); updateStatus();
+  toast("נוסף אימון "+letter+(name.trim()?" · "+name.trim():""));
+}
+function delRoutine(p,r){
+  const rt=plans[p].routines[r]; if(!rt) return;
+  if(Object.keys(plans[p].routines).length<=1){ toast("אי אפשר למחוק את האימון האחרון בתוכנית", true); return; }
+  if(session.start && p===activePlan && (session.routine===r||currentRoutine===r)){ toast("יש אימון פתוח על האימון הזה — סיים אותו קודם", true); return; }
+  if(!confirm("למחוק את אימון "+r+(rt.name?" ("+rt.name+")":"")+" על "+rt.ex.length+" התרגילים שבו? ההיסטוריה נשמרת.")) return;
+  delete plans[p].routines[r];
+  if(p===activePlan && currentRoutine===r) currentRoutine=firstRoutine();
+  persistData(); renderEditor(); renderWorkout(); updateStatus();
+  toast("אימון "+r+" נמחק");
+}
+function addPlan(){
+  const name=prompt("שם התוכנית החדשה:","Routine "+(Object.keys(plans).length+1));
+  if(!name) return;
+  const id="p"+Date.now();
+  plans[id]={name, routines:{A:{name:"", ex:[]}}};
+  persistData(); renderPlanSelects(); $("editPlanSel").value=id; renderEditor();
+}
+
+/* ---------- import / export ---------- */
+function download(blob, fname){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=fname;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+async function shareOrDownload(blob, fname, mime){
+  const file=new File([blob], fname, {type:mime});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:fname}); return; }catch(e){ if(e.name==="AbortError") return; }
+  }
+  download(blob, fname);
+}
+async function exportCSV(){
+  if(!history.length){ toast("אין אימונים לייצוא", true); return; }
+  let csv="Date,Plan,Workout,Duration_min,Exercise,Set,Weight_kg,Reps\n";
+  history.forEach(w=>w.entries.forEach(e=>e.sets.forEach((s,i)=>{
+    const planName=plans[w.plan]?plans[w.plan].name:w.plan;
+    csv+=`${w.date},"${planName}",${w.routine},${w.duration_min||""},"${e.name}",${i+1},${s.w||0},${s.r}\n`;
+  })));
+  await shareOrDownload(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"}), "workouts.csv", "text/csv");
+}
+async function exportJSON(){
+  const dump={version:3, exported:new Date().toISOString(), plans, activePlan, restCfg, history};
+  await shareOrDownload(new Blob([JSON.stringify(dump,null,2)],{type:"application/json"}), "gym-backup.json", "application/json");
+}
+function importJSON(file){
+  if(!file) return;
+  const fr=new FileReader();
+  fr.onload=async()=>{
+    try{
+      const d=JSON.parse(fr.result);
+      if(!d.plans||!d.history) throw new Error();
+      if(!confirm("לשחזר מהגיבוי? זה מחליף את כל הנתונים הנוכחיים.")) return;
+      plans=d.plans; activePlan=d.activePlan||Object.keys(plans)[0];
+      restCfg=d.restCfg||{}; history=d.history;
+      await store.set(DATA,{plans,activePlan,restCfg});
+      await store.set(LOG,history);
+      toast("שוחזר: "+history.length+" אימונים");
+      renderPlanSelects(); renderEditor(); renderWorkout(); updateStatus();
+    }catch(e){ toast("קובץ לא תקין", true); }
+  };
+  fr.readAsText(file);
+}
+function splitCSV(line){
+  const out=[]; let cur="", q=false;
+  for(const ch of line){
+    if(ch==='"'){ q=!q; continue; }
+    if(ch===','&&!q){ out.push(cur); cur=""; continue; }
+    cur+=ch;
+  }
+  out.push(cur); return out;
+}
+function importHevy(file){
+  if(!file) return;
+  const fr=new FileReader();
+  fr.onload=async()=>{
+    try{
+      const lines=fr.result.split(/\r?\n/).filter(l=>l.trim());
+      const head=splitCSV(lines[0]).map(h=>h.trim().toLowerCase());
+      const ix={
+        title:head.indexOf("title"), start:head.indexOf("start_time"),
+        ex:head.indexOf("exercise_title"), w:head.indexOf("weight_kg"), r:head.indexOf("reps")
+      };
+      if(ix.ex<0||ix.r<0) throw new Error();
+      const groups={};
+      for(let i=1;i<lines.length;i++){
+        const c=splitCSV(lines[i]);
+        const raw=ix.start>=0?c[ix.start]:"";
+        let date=raw;
+        const dt=new Date(raw);
+        if(!isNaN(dt)) date=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+        const key=(ix.title>=0?c[ix.title]:"Hevy")+"|"+raw;
+        if(!groups[key]) groups[key]={date, plan:"hevy", routine:(ix.title>=0?c[ix.title]:"Hevy"), duration_min:"", entries:[]};
+        const g=groups[key];
+        const name=c[ix.ex]; if(!name) continue;
+        let e=g.entries.find(x=>x.name===name);
+        if(!e){ e={name, sets:[]}; g.entries.push(e); }
+        const reps=c[ix.r]; if(reps==="") continue;
+        e.sets.push({w:ix.w>=0?(c[ix.w]||0):0, r:reps});
+      }
+      const imported=Object.values(groups).filter(g=>g.entries.length);
+      if(!imported.length) throw new Error();
+      history=history.concat(imported).sort((a,b)=>a.date<b.date?-1:1);
+      const ok=await store.set(LOG,history);
+      if(!ok) throw new Error();
+      toast("יובאו "+imported.length+" אימונים מ-Hevy");
+      renderWorkout();
+    }catch(e){ toast("ייבוא נכשל — ודא שזה קובץ ייצוא של Hevy", true); }
+  };
+  fr.readAsText(file);
+}
+
+init();
+</script>
+</body>
+</html>
