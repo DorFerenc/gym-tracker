@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#131416">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: https://fitnessprogramer.com; manifest-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; manifest-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -145,8 +145,13 @@
   .modal h2{margin:0 0 3px; font-size:18px;}
   .modal .mus{color:var(--accent); font-size:13px; font-weight:600; margin:0 0 12px;}
   .modal .gifwrap{margin:0 0 12px;}
-  .modal .gifwrap img{width:100%; max-height:46vh; object-fit:contain; border-radius:12px;
-    background:#fff; display:block;}
+  .exfig{width:100%; max-height:34vh; display:block; border-radius:12px; background:var(--card2);}
+  .exfig .l{stroke:var(--ink); stroke-width:5.5; stroke-linecap:round; stroke-linejoin:round; fill:none;}
+  .exfig .a{stroke:#8fb6d9;} /* arms tinted so they read apart from the legs */
+  .exfig .t{stroke:var(--accent);}
+  .exfig .h{fill:var(--accent);}
+  .exfig .w{fill:var(--accent); stroke:none;}
+  .exfig .pr{stroke:#454b54; stroke-width:6; stroke-linecap:round;}
   .modal .desc{color:var(--ink); font-size:14px; line-height:1.55; margin:0 0 14px; white-space:pre-line;}
   .modal .links{display:flex; gap:8px; margin-bottom:14px;}
   .modal .links a{flex:1; text-align:center; background:#232529; border:1px solid var(--line);
@@ -160,6 +165,20 @@
   .altrow .alt-head b{font-size:15px;}
   .altrow .alt-why{color:var(--mute); font-size:12.5px; margin-bottom:8px;}
   .altrow .sbtn{padding:9px 12px;}
+  .orderrow{display:flex; justify-content:flex-end; margin:-4px 0 10px;}
+  .obtn{background:var(--card); border:1px solid var(--line); color:var(--mute); border-radius:10px;
+    padding:7px 12px; font-size:12.5px; font-weight:700; cursor:pointer;}
+  .obtn.on{color:var(--accent); border-color:var(--accent);}
+  .zhead{color:var(--mute); font-size:11.5px; font-weight:800; letter-spacing:.12em;
+    text-transform:uppercase; margin:14px 2px 7px; display:flex; align-items:center; gap:8px;}
+  .zhead:first-child{margin-top:2px;}
+  .zhead::after{content:""; flex:1; height:1px; background:var(--line);}
+  .zhead span{color:var(--accent); letter-spacing:0;}
+  .addex{width:100%; margin:4px 0 8px; background:none; border:1px dashed var(--line);
+    color:var(--accent); border-radius:12px; padding:12px; font-size:14px; font-weight:700; cursor:pointer;}
+  .filt{width:100%; background:var(--card2); border:1px solid var(--line); border-radius:10px;
+    color:var(--ink); font-size:15px; padding:10px 12px; margin-bottom:6px;}
+  .filt:focus{outline:none; border-color:var(--accent);}
   .sbtn{transition:background .15s, transform .06s;}
   .sbtn:active{transform:scale(.98);}
   @media (prefers-reduced-motion: reduce){
@@ -184,6 +203,7 @@
   <div class="planrow"><select id="planSel" onchange="switchPlan(this.value)"></select></div>
   <div class="tabs" id="tabs"></div>
   <div class="pbar hidden" id="pbar"><i id="pbarFill"></i></div>
+  <div class="orderrow"><button class="obtn" id="orderBtn" onclick="toggleOrder()" title="Group exercises by gym equipment">⇅ Plan order</button></div>
   <div id="exercises"></div>
   <div class="count" id="count"></div>
 </div>
@@ -254,6 +274,17 @@
   </div>
 </div>
 
+<div class="modal-bg" id="addBg" onclick="closeAdd(event)">
+  <div class="modal">
+    <h2>Add exercise</h2>
+    <p class="hint" style="margin:0 0 10px">Added to the end of this routine and kept in the plan — remove it any time in Manage.</p>
+    <input class="filt" id="addFilter" placeholder="Search exercises…" oninput="renderAddList()" autocomplete="off">
+    <div id="addList"></div>
+    <button class="sbtn" style="margin-top:10px" onclick="addCustom()">+ Custom exercise…</button>
+    <button class="close" style="margin-top:8px" onclick="closeAdd()">Close</button>
+  </div>
+</div>
+
 <script>
 /* ---------- default data ----------
    Intentionally empty: no personal data ships with the app.
@@ -265,69 +296,69 @@ const DEFAULT_PLANS = {
   }},
 };
 
-/* ---------- exercise guide (English how-to + demo GIF) ----------
-   GIFs are hotlinked from fitnessprogramer.com and load only when the
-   info sheet is opened; if a GIF fails (offline / moved), the sheet
-   falls back to the demo-search links. Keyed by normalized name. */
-const GIF_BASE="https://fitnessprogramer.com/wp-content/uploads/2021/02/";
+/* ---------- exercise guide (English how-to + built-in demo animation) ----------
+   Each entry names a movement pattern (p) drawn as an animated SVG figure by
+   figSVG() below. Self-hosted on purpose: hotlinked GIFs broke (dead URLs and
+   hotlink protection) and needed an external origin in the CSP. These always
+   render, work offline, and leak nothing. Keyed by normalized name. */
 const EXERCISE_INFO={
-  "bench press (dumbbell)":{m:"Chest · front delts · triceps",g:"Dumbbell-Press.gif",
+  "bench press (dumbbell)":{m:"Chest · front delts · triceps",p:"press-flat",
     d:"Lie on a flat bench with a dumbbell in each hand at chest level.\nPress the dumbbells up until your arms are extended, then lower them slowly back to the sides of your chest.\nKeep your feet planted and your shoulder blades pinched back against the bench."},
-  "incline db press":{m:"Upper chest · front delts · triceps",g:"Incline-Dumbbell-Press.gif",
+  "incline db press":{m:"Upper chest · front delts · triceps",p:"press-incline",
     d:"Set the bench to a 30–45° incline and hold the dumbbells at shoulder level with a neutral-ish grip.\nPress up and slightly back until your arms are extended, then lower under control.\nStop the descent where your shoulders stay pain-free."},
-  "dumbbell row":{m:"Lats · mid-back · biceps",g:"Dumbbell-Row.gif",
+  "dumbbell row":{m:"Lats · mid-back · biceps",p:"row",
     d:"Support one hand and knee on a bench, back flat, dumbbell hanging in the other hand.\nPull the dumbbell to your hip, driving the elbow back — not out.\nLower slowly until your arm is fully stretched. Avoid twisting the torso."},
-  "squat (barbell)":{m:"Quads · glutes · core",g:"BARBELL-SQUAT.gif",
+  "squat (barbell)":{m:"Quads · glutes · core",p:"squat",
     d:"Bar on your upper back, feet shoulder-width, toes slightly out.\nBrace your core and sit down between your hips until your thighs reach at least parallel.\nDrive up through mid-foot, knees tracking over the toes the whole way."},
-  "pull up":{m:"Lats · upper back · biceps",g:"Pull-up.gif",
+  "pull up":{m:"Lats · upper back · biceps",p:"pullup",
     d:"Hang from the bar with an overhand grip slightly wider than your shoulders.\nPull your chest toward the bar by driving the elbows down, then lower to a full hang under control.\nIf your shoulder complains, switch to Lat Pulldown."},
-  "pull up (weighted)":{m:"Lats · upper back · biceps",g:"Pull-up.gif",
+  "pull up (weighted)":{m:"Lats · upper back · biceps",p:"pullup",
     d:"Same movement as a strict pull up, with extra weight on a dip belt (or a dumbbell between your feet).\nFull hang at the bottom, chest to the bar at the top, no swinging.\nAdd weight only when clean bodyweight reps are easy."},
-  "hanging leg raise":{m:"Abs · hip flexors · grip",g:"Hanging-Leg-Raises.gif",
+  "hanging leg raise":{m:"Abs · hip flexors · grip",p:"legraise",
     d:"Hang from a bar with straight arms.\nRaise your legs (bent knees is fine to start) by curling the pelvis up — don't just swing the legs.\nLower slowly to a dead hang between reps."},
-  "captain's chair leg raise":{m:"Abs · hip flexors",g:"Captains-Chair-Leg-Raise.gif",
+  "captain's chair leg raise":{m:"Abs · hip flexors",p:"legraise",
     d:"Support yourself on your forearms in the captain's chair, back against the pad.\nRaise your knees toward your chest by curling the pelvis up, then lower slowly.\nNo hanging involved, so it is easy on the shoulders. No station? Lying bench leg raises 3×15."},
-  "standing calf raise (barbell)":{m:"Calves",g:"Standing-Calf-Raise.gif",
+  "standing calf raise (barbell)":{m:"Calves",p:"calf",
     d:"Stand with the bar on your back, balls of your feet on a small block.\nRise as high as you can onto your toes, pause a second, then lower until you feel a full stretch.\nKeep your knees straight but not locked."},
-  "calf press (machine)":{m:"Calves",g:"Leg-Press-Calf-Raise.gif",
+  "calf press (machine)":{m:"Calves",p:"calf",
     d:"On the leg-press machine, place the balls of your feet on the bottom edge of the platform.\nPush through your toes to full extension, pause, then let your heels come back for a deep stretch.\nKeep the movement slow — no bouncing."},
-  "bulgarian split squat":{m:"Quads · glutes · balance",g:"Dumbbell-Bulgarian-Split-Squat.gif",
+  "bulgarian split squat":{m:"Quads · glutes · balance",p:"squat",
     d:"Stand a stride ahead of a bench and rest your back foot on it, dumbbells at your sides.\nLower straight down until your front thigh is about parallel, then drive up through the front heel.\nKeep your torso tall; do all reps on one leg, then switch."},
-  "bulgarian split squat (dumbbell)":{m:"Quads · glutes · balance",g:"Dumbbell-Bulgarian-Split-Squat.gif",
+  "bulgarian split squat (dumbbell)":{m:"Quads · glutes · balance",p:"squat",
     d:"Stand a stride ahead of a bench and rest your back foot on it, dumbbells at your sides.\nLower straight down until your front thigh is about parallel, then drive up through the front heel.\nKeep your torso tall; do all reps on one leg, then switch."},
-  "shoulder press (dumbbell)":{m:"Shoulders · triceps",g:"Dumbbell-Shoulder-Press.gif",
+  "shoulder press (dumbbell)":{m:"Shoulders · triceps",p:"press-oh",
     d:"Seated or standing, hold the dumbbells at shoulder height, palms forward or neutral.\nPress overhead until your arms are extended without shrugging, then lower to ear level.\nKeep your ribs down and core braced — don't arch the lower back."},
-  "lateral raise (dumbbell)":{m:"Side delts",g:"Dumbbell-Lateral-Raise.gif",
+  "lateral raise (dumbbell)":{m:"Side delts",p:"raise-lat",
     d:"Stand with dumbbells at your sides, slight bend in the elbows.\nRaise your arms out to the sides up to shoulder height, leading with the elbows.\nLower slowly — lighter and cleaner beats heavier and swingy."},
-  "bicep curl (dumbbell)":{m:"Biceps · forearms",g:"Dumbbell-Curl.gif",
+  "bicep curl (dumbbell)":{m:"Biceps · forearms",p:"curl",
     d:"Stand tall, dumbbells at your sides, palms forward.\nCurl the weight up without moving your upper arms, squeeze at the top, then lower slowly.\nNo swinging from the hips."},
-  "db bicep curl":{m:"Biceps · forearms",g:"Dumbbell-Curl.gif",
+  "db bicep curl":{m:"Biceps · forearms",p:"curl",
     d:"Stand tall, dumbbells at your sides, palms forward.\nCurl the weight up without moving your upper arms, squeeze at the top, then lower slowly.\nNo swinging from the hips."},
-  "triceps extension (dumbbell)":{m:"Triceps",g:"Dumbbell-Triceps-Extension.gif",
+  "triceps extension (dumbbell)":{m:"Triceps",p:"ext-oh",
     d:"Hold one dumbbell overhead with both hands, elbows pointing forward.\nLower the weight behind your head by bending the elbows, then extend back up.\nKeep the upper arms still — only the forearms move."},
-  "triceps pushdown":{m:"Triceps",g:"Pushdown.gif",
+  "triceps pushdown":{m:"Triceps",p:"pushdown",
     d:"Stand at a cable stack with the bar or rope at chest height, elbows tucked to your sides.\nPush the handle down until your arms are fully extended, squeeze, then let it rise to elbow height.\nElbows stay glued to your ribs the whole set."},
-  "seated leg curl":{m:"Hamstrings",g:"Seated-Leg-Curl.gif",
+  "seated leg curl":{m:"Hamstrings",p:"legcurl",
     d:"Sit with the pad on the back of your ankles, thighs secured.\nCurl your heels under the seat as far as they go, pause, then release slowly.\nThe slow negative is where the hamstrings do their work."},
-  "seated leg curl (machine)":{m:"Hamstrings",g:"Seated-Leg-Curl.gif",
+  "seated leg curl (machine)":{m:"Hamstrings",p:"legcurl",
     d:"Sit with the pad on the back of your ankles, thighs secured.\nCurl your heels under the seat as far as they go, pause, then release slowly.\nThe slow negative is where the hamstrings do their work."},
-  "leg extension (machine)":{m:"Quads",g:"LEG-EXTENSION.gif",
+  "leg extension (machine)":{m:"Quads",p:"legext",
     d:"Sit with the pad on your shins, knees lined up with the machine's pivot.\nExtend your legs until your knees are straight, squeeze the quads, then lower under control.\nDon't let the stack slam between reps."},
-  "leg press (machine)":{m:"Quads · glutes · hamstrings",g:"Leg-Press.gif",
+  "leg press (machine)":{m:"Quads · glutes · hamstrings",p:"legpress",
     d:"Feet shoulder-width on the platform, lower back pressed into the pad.\nLower the sled until your knees are near your chest without your hips curling off the seat.\nPress back up through the whole foot without locking the knees hard."},
-  "leg press (plate-loaded)":{m:"Quads · glutes · hamstrings",g:"Leg-Press.gif",
+  "leg press (plate-loaded)":{m:"Quads · glutes · hamstrings",p:"legpress",
     d:"Feet shoulder-width on the platform, lower back pressed into the pad.\nLower the sled through a full range — knees toward your chest, hips staying on the seat.\nPress back up through the whole foot without locking the knees hard."},
-  "v-squat (hammer)":{m:"Quads · glutes",g:"Hack-Squat.gif",
+  "v-squat (hammer)":{m:"Quads · glutes",p:"squat",
     d:"Stand in the V-squat / hack machine with your back and hips flat against the pad.\nUnlock and squat down until your thighs reach about parallel, knees tracking over the toes.\nDrive up through mid-foot. Weight = plates loaded. Smith-machine squat is the backup option."},
-  "iso row (plate-loaded)":{m:"Lats · mid-back · biceps",g:"Lever-Seated-Row.gif",
+  "iso row (plate-loaded)":{m:"Lats · mid-back · biceps",p:"row",
     d:"Sit with your chest against the pad and grab the handles.\nPull toward your hips, driving the elbows back and squeezing the shoulder blades together.\nRelease slowly to a full stretch. Weight = plates per side."},
-  "seated cable row":{m:"Mid-back · lats · biceps",g:"Seated-Cable-Row.gif",
+  "seated cable row":{m:"Mid-back · lats · biceps",p:"row",
     d:"Sit tall, feet braced, and grab the handle with arms extended.\nPull to your stomach with shoulders down and back, chest proud.\nLet the weight stretch you forward slowly between reps — no slouching."},
-  "back extension":{m:"Lower back · glutes · hamstrings",g:"Hyperextension.gif",
+  "back extension":{m:"Lower back · glutes · hamstrings",p:"hinge",
     d:"Set the pad at your hips on the 45° bench, ankles locked in.\nLower your torso with a straight back, then raise up until your body forms a straight line — no hyperextending.\nHold a plate to your chest once bodyweight is easy."},
-  "reverse fly (machine)":{m:"Rear delts · upper back",g:"Machine-Reverse-Fly.gif",
+  "reverse fly (machine)":{m:"Rear delts · upper back",p:"raise-lat",
     d:"Sit facing the machine's pad, arms forward on the handles.\nSweep your arms out and back in a wide arc until they are in line with your shoulders.\nLight weight, strict form — this one is for shoulder health."},
-  "chest press (machine)":{m:"Chest · front delts · triceps",g:"Lever-Chest-Press.gif",
+  "chest press (machine)":{m:"Chest · front delts · triceps",p:"press-flat",
     d:"Adjust the seat so the handles sit at mid-chest level.\nPress forward until your arms are extended, then return until you feel a comfortable stretch.\nIf it bothers your shoulder, switch to the alternate (yellow) machine."},
 };
 function findInfo(name){
@@ -341,6 +372,67 @@ function findInfo(name){
   }
   return null;
 }
+/* ---------- built-in movement animations ----------
+   One side-view stick figure, posed and animated per movement pattern.
+   A joint value is either a fixed angle or [from,to] to animate between;
+   0° points a limb straight down, body rotates the whole figure.
+   All values come from this table — never from stored or imported data. */
+const MOVE={
+  "press-flat":   {body:-90,uarm:[-55,-90],farm:[76,2],thigh:-52,shin:58,wt:1,prop:"bench"},
+  "press-incline":{body:-62,uarm:[-85,-118],farm:[76,2],thigh:-34,shin:44,wt:1,prop:"binc"},
+  "press-oh":     {uarm:[125,178],farm:[52,2],wt:1,prop:"floor"},
+  "fly":          {uarm:[92,26],farm:10,wt:1,prop:"floor"},
+  "row":          {torso:66,uarm:[-66,-104],farm:[0,-58],thigh:-12,shin:14,wt:1,prop:"floor"},
+  "pullup":       {uarm:[170,142],farm:[0,-72],thigh:10,shin:12,ty:-16,prop:"bar"},
+  "pulldown":     {uarm:[172,140],farm:[0,-66],thigh:-88,shin:84,prop:"seat"},
+  "squat":        {torso:[0,26],thigh:[0,58],shin:[0,-58],uarm:[0,-26],ty:16,wt:1,prop:"floor"},
+  "legpress":     {body:-34,uarm:6,farm:8,thigh:[-72,-98],shin:[58,6],prop:"seat"},
+  "hinge":        {torso:[2,72],uarm:[-2,-72],thigh:[0,-10],wt:1,prop:"floor"},
+  "hipthrust":    {body:-90,torso:[0,-26],thigh:[-58,-32],shin:64,ty:-8,wt:1,prop:"bench"},
+  "curl":         {uarm:6,farm:[0,-142],wt:1,prop:"floor"},
+  "pushdown":     {uarm:14,farm:[-72,4],wt:1,prop:"floor"},
+  "ext-oh":       {uarm:172,farm:[-128,-4],wt:1,prop:"floor"},
+  "raise-lat":    {uarm:[4,92],farm:4,wt:1,prop:"floor"},
+  "legcurl":      {body:-90,torso:4,uarm:-8,thigh:-6,shin:[2,-62],prop:"bench"},
+  "legext":       {thigh:-88,shin:[6,-84],uarm:-10,prop:"seat"},
+  "calf":         {uarm:8,foot:[0,-34],ty:-12,wt:1,prop:"floor"},
+  "legraise":     {uarm:170,thigh:[8,-84],shin:[10,-24],prop:"bar"},
+  "crunch":       {torso:[12,62],uarm:[-10,-56],thigh:2,shin:-96,prop:"kneel"},
+  "plank":        {body:-90,torso:2,uarm:[86,92],farm:[-86,-92],thigh:6,shin:4,ty:-2,prop:"floor"},
+};
+const REDUCED=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+const DUR="2.6s", SPL='calcMode="spline" keySplines=".42 0 .58 1;.42 0 .58 1" keyTimes="0;.5;1"';
+function jg(a,inner){ /* joint group: fixed angle, or [from,to] animated */
+  if(!Array.isArray(a)) return `<g transform="rotate(${+a||0})">${inner}</g>`;
+  if(REDUCED) return `<g transform="rotate(${(a[0]+a[1])/2})">${inner}</g>`;
+  return `<g transform="rotate(${a[0]})"><animateTransform attributeName="transform" type="rotate"`
+    +` values="${a[0]};${a[1]};${a[0]}" ${SPL} dur="${DUR}" repeatCount="indefinite"/>${inner}</g>`;
+}
+const PROPS={
+  floor:'<line class="pr" x1="34" y1="152" x2="166" y2="152"/>',
+  kneel:'<line class="pr" x1="34" y1="132" x2="166" y2="132"/>',
+  bench:'<line class="pr" x1="40" y1="108" x2="152" y2="108"/><line class="pr" x1="60" y1="108" x2="60" y2="150"/><line class="pr" x1="134" y1="108" x2="134" y2="150"/>',
+  binc: '<line class="pr" x1="48" y1="74" x2="146" y2="120"/><line class="pr" x1="132" y1="114" x2="132" y2="150"/>',
+  seat: '<line class="pr" x1="86" y1="106" x2="152" y2="106"/><line class="pr" x1="88" y1="106" x2="88" y2="56"/>',
+  bar:  '<line class="pr" x1="46" y1="18" x2="154" y2="18"/>',
+};
+function figSVG(p){
+  const m=MOVE[p]; if(!m) return "";
+  const A=k=>m[k]===undefined?0:m[k];
+  const wt=m.wt?'<circle class="w" cx="0" cy="24" r="5.5"/>':"";
+  const arm=jg(A("uarm"),'<line class="l a" x1="0" y1="0" x2="0" y2="22"/><g transform="translate(0,22)">'
+    +jg(A("farm"),'<line class="l a" x1="0" y1="0" x2="0" y2="20"/>'+wt)+'</g>');
+  const foot=jg(A("foot"),'<line class="l" x1="0" y1="0" x2="12" y2="0"/>');
+  const leg=jg(A("thigh"),'<line class="l" x1="0" y1="0" x2="0" y2="28"/><g transform="translate(0,28)">'
+    +jg(A("shin"),'<line class="l" x1="0" y1="0" x2="0" y2="28"/><g transform="translate(0,28)">'+foot+'</g>')+'</g>');
+  /* arms sit slightly off the torso axis so they never hide behind it */
+  const torso=jg(A("torso"),'<line class="l t" x1="0" y1="0" x2="0" y2="-42"/><circle class="h" cx="0" cy="-53" r="9"/>'
+    +'<g transform="translate(7,-40)">'+arm+'</g>');
+  const ty=(m.ty&&!REDUCED)
+    ?`<animateTransform attributeName="transform" type="translate" values="100,100;100,${100+m.ty};100,100" ${SPL} dur="${DUR}" repeatCount="indefinite"/>`:"";
+  return `<svg class="exfig" viewBox="0 0 200 160" role="img" aria-label="${esc(p)} movement animation">`
+    +(PROPS[m.prop]||"")+`<g transform="translate(100,100)">${ty}${jg(A("body"),leg+torso)}</g></svg>`;
+}
 function showInfo(name){
   const info=findInfo(name);
   $("infoTitle").textContent=name;
@@ -349,20 +441,14 @@ function showInfo(name){
   $("infoLinks").innerHTML=
     `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(name+" exercise form")}" target="_blank" rel="noopener">▶ Video demos</a>`+
     `<a href="https://www.google.com/search?udm=2&q=${encodeURIComponent(name+" exercise gif")}" target="_blank" rel="noopener">🔎 More GIFs</a>`;
-  const wrap=$("infoGif"); wrap.innerHTML="";
-  if(info&&info.g){
-    const img=new Image();
-    img.referrerPolicy="no-referrer"; img.alt=name+" demonstration";
-    img.onerror=()=>{ wrap.innerHTML='<p class="hint" style="text-align:center;padding:8px 0">GIF could not load (offline?) — use the demo links below.</p>'; };
-    img.src=info.g.startsWith("http")?info.g:GIF_BASE+info.g;
-    wrap.appendChild(img);
-  }
+  /* figSVG output is built only from the MOVE table, never from stored data */
+  $("infoGif").innerHTML=(info&&info.p)?figSVG(info.p):"";
   $("infoBg").classList.add("show");
 }
 function closeInfo(ev){
   if(ev&&ev.target!==$("infoBg")) return; /* backdrop click only */
   $("infoBg").classList.remove("show");
-  $("infoGif").innerHTML=""; /* stop the gif when closed */
+  $("infoGif").innerHTML=""; /* stop the animation when closed */
 }
 
 /* ---------- exercise swap: same muscles, different stimulus ----------
@@ -429,45 +515,45 @@ const ALT_LIST=[
 ];
 /* guides for the swap-in exercises so their i button works too */
 Object.assign(EXERCISE_INFO,{
-  "cable fly":{m:"Chest",g:"Cable-Crossover.gif",
+  "cable fly":{m:"Chest",p:"fly",
     d:"Stand between the cable towers, handles at shoulder height, slight bend in the elbows.\nBring your hands together in a wide hug until they meet in front of your chest, squeeze, then open slowly to a stretch.\nThe arms stay almost straight — the chest does the work, not the triceps."},
-  "push up":{m:"Chest · front delts · triceps · core",g:"Push-Up.gif",
+  "push up":{m:"Chest · front delts · triceps · core",p:"press-flat",
     d:"Hands slightly wider than your shoulders, body in one straight line.\nLower your chest to just above the floor, elbows about 45° from your body, then press back up.\nToo easy? Elevate your feet or slow the negative."},
-  "barbell row":{m:"Lats · mid-back · lower back · biceps",g:"Barbell-Bent-Over-Row.gif",
+  "barbell row":{m:"Lats · mid-back · lower back · biceps",p:"row",
     d:"Hinge forward to about 45° with a flat back, bar hanging at arm's length.\nPull the bar to your lower ribs, driving the elbows back, then lower under control.\nNo jerking with the hips — if you have to swing it, it's too heavy."},
-  "lat pulldown":{m:"Lats · upper back · biceps",g:"Lat-Pulldown.gif",
+  "lat pulldown":{m:"Lats · upper back · biceps",p:"pulldown",
     d:"Sit with your thighs locked under the pads, grip slightly wider than shoulders.\nPull the bar to your upper chest while leaning back just a little, then let it rise to a full stretch.\nDrive the elbows down — don't pull with the wrists."},
-  "goblet squat":{m:"Quads · glutes · core",g:"Goblet-Squat.gif",
+  "goblet squat":{m:"Quads · glutes · core",p:"squat",
     d:"Hold one dumbbell vertically against your chest with both hands.\nSquat down between your knees keeping the torso tall, elbows inside the knees at the bottom.\nDrive up through mid-foot. The front load keeps your form honest."},
-  "walking lunge":{m:"Quads · glutes · balance",g:"Dumbbell-Lunge.gif",
+  "walking lunge":{m:"Quads · glutes · balance",p:"squat",
     d:"Dumbbells at your sides, take a long step forward and lower until both knees are near 90°.\nPush off the front heel straight into the next step.\nKeep the torso upright and the steps controlled — no wobbling."},
-  "lying leg curl":{m:"Hamstrings",g:"Leg-Curl.gif",
+  "lying leg curl":{m:"Hamstrings",p:"legcurl",
     d:"Lie face down with the pad on the back of your ankles.\nCurl your heels toward your glutes, pause at the top, then lower slowly.\nKeep your hips pressed into the bench the whole set."},
-  "romanian deadlift":{m:"Hamstrings · glutes · lower back",g:"Barbell-Romanian-Deadlift.gif",
+  "romanian deadlift":{m:"Hamstrings · glutes · lower back",p:"hinge",
     d:"Hold the bar at your hips, knees slightly bent and fixed.\nPush your hips back and lower the bar down your thighs until you feel a strong hamstring stretch, back flat.\nDrive the hips forward to stand — it's a hinge, not a squat."},
-  "hip thrust":{m:"Glutes · hamstrings",g:"Barbell-Hip-Thrust.gif",
+  "hip thrust":{m:"Glutes · hamstrings",p:"hipthrust",
     d:"Upper back on a bench, bar (padded) over your hips, feet flat.\nDrive through your heels until your body is a straight line from knees to shoulders, chin tucked.\nSqueeze the glutes hard at the top, then lower with control."},
-  "seated calf raise":{m:"Calves (soleus)",g:"Seated-Calf-Raise.gif",
+  "seated calf raise":{m:"Calves (soleus)",p:"calf",
     d:"Sit with the pad on your knees, balls of your feet on the platform.\nRise onto your toes, pause, then lower into a deep stretch.\nThe bent knees make the deeper soleus muscle do the work."},
-  "arnold press":{m:"Shoulders (all heads) · triceps",g:"Arnold-Press.gif",
+  "arnold press":{m:"Shoulders (all heads) · triceps",p:"press-oh",
     d:"Start with the dumbbells in front of your shoulders, palms facing you.\nPress overhead while rotating your palms to face forward, then reverse the rotation on the way down.\nSmooth and controlled — the rotation is the point, not extra weight."},
-  "machine shoulder press":{m:"Shoulders · triceps",g:"Lever-Shoulder-Press.gif",
+  "machine shoulder press":{m:"Shoulders · triceps",p:"press-oh",
     d:"Adjust the seat so the handles start at about ear height.\nPress up until your arms are extended without shrugging, then lower with control.\nThe fixed path lets you focus purely on the delts."},
-  "cable lateral raise":{m:"Side delts",g:"Cable-Lateral-Raise.gif",
+  "cable lateral raise":{m:"Side delts",p:"raise-lat",
     d:"Stand side-on to a low pulley, handle in the far hand.\nRaise your arm out to the side up to shoulder height, slight elbow bend.\nThe cable keeps tension even at the bottom — go lighter than with dumbbells."},
-  "face pull":{m:"Rear delts · rotator cuff · upper back",g:"Face-Pull.gif",
+  "face pull":{m:"Rear delts · rotator cuff · upper back",p:"raise-lat",
     d:"Set a rope at upper-chest height and grab it thumbs-back.\nPull toward your face while spreading the rope apart, elbows high, until your hands reach your ears.\nLight weight, strict reps — this is shoulder-health work."},
-  "hammer curl":{m:"Biceps · brachialis · forearms",g:"Hammer-Curl.gif",
+  "hammer curl":{m:"Biceps · brachialis · forearms",p:"curl",
     d:"Hold the dumbbells with a neutral grip, palms facing each other.\nCurl up without rotating the wrists, squeeze, then lower slowly.\nThe neutral grip hits the brachialis and forearms harder than a normal curl."},
-  "cable curl":{m:"Biceps · forearms",g:"Cable-Curl.gif",
+  "cable curl":{m:"Biceps · forearms",p:"curl",
     d:"Stand facing a low pulley with a straight or EZ bar.\nCurl to shoulder height keeping the upper arms still, then lower all the way down.\nThe cable never lets the tension drop — strict form, no swinging."},
-  "skull crusher":{m:"Triceps",g:"Skull-Crusher.gif",
+  "skull crusher":{m:"Triceps",p:"ext-oh",
     d:"Lie on a bench holding the bar or dumbbells over your chest.\nBend only the elbows to lower the weight to just above your forehead, then extend back up.\nKeep the upper arms vertical and still the whole set."},
-  "bench dips":{m:"Triceps · chest · front delts",g:"Bench-Dips.gif",
+  "bench dips":{m:"Triceps · chest · front delts",p:"pushdown",
     d:"Hands on the edge of a bench behind you, legs extended forward.\nLower your hips by bending the elbows to about 90°, then press back up.\nKeep the elbows pointing straight back and stay close to the bench."},
-  "cable crunch":{m:"Abs",g:"Cable-Crunch.gif",
+  "cable crunch":{m:"Abs",p:"crunch",
     d:"Kneel below a high pulley holding the rope beside your head.\nCrunch down by curling your spine — bring your elbows toward your knees — then uncurl slowly.\nThe hips stay still; it's the abs folding you, not the arms pulling."},
-  "plank":{m:"Abs · core · shoulders",g:"Plank.gif",
+  "plank":{m:"Abs · core · shoulders",p:"plank",
     d:"Forearms on the floor, body in one straight line from head to heels.\nBrace your abs and glutes and hold — don't let the hips sag or pike.\nWhen a set passes a minute easily, add weight on your back instead of time."},
 });
 /* plan-name variants → their catalog entry (exact, no fuzzy guessing) */
@@ -481,6 +567,58 @@ const ALT_ALIAS={
 function altFor(name){
   const n=ALT_ALIAS[norm(name)]||norm(name);
   return ALT_LIST.find(a=>norm(a.n)===n)||null;
+}
+
+/* ---------- equipment zones ----------
+   Ordered the way a gym floor is usually laid out, so "Gym order" walks you
+   through one station at a time instead of criss-crossing the room. */
+const ZONES=[
+  {k:"barbell", n:"Barbell & rack"},
+  {k:"dumbbell",n:"Dumbbells"},
+  {k:"machine", n:"Machines"},
+  {k:"cable",   n:"Cables"},
+  {k:"body",    n:"Pull-up & bodyweight"},
+  {k:"mat",     n:"Mat & core"},
+];
+const EQ={
+  "bench press (dumbbell)":"dumbbell","incline db press":"dumbbell","chest press (machine)":"machine",
+  "cable fly":"cable","push up":"body","dumbbell row":"dumbbell","iso row (plate-loaded)":"machine",
+  "seated cable row":"cable","barbell row":"barbell","pull up":"body","pull up (weighted)":"body",
+  "lat pulldown":"cable","squat (barbell)":"barbell","v-squat (hammer)":"machine",
+  "leg press (plate-loaded)":"machine","leg press (machine)":"machine",
+  "bulgarian split squat":"dumbbell","bulgarian split squat (dumbbell)":"dumbbell",
+  "goblet squat":"dumbbell","walking lunge":"dumbbell","leg extension (machine)":"machine",
+  "seated leg curl":"machine","seated leg curl (machine)":"machine","lying leg curl":"machine",
+  "romanian deadlift":"barbell","back extension":"body","hip thrust":"barbell",
+  "standing calf raise (barbell)":"barbell","calf press (machine)":"machine","seated calf raise":"machine",
+  "shoulder press (dumbbell)":"dumbbell","arnold press":"dumbbell","machine shoulder press":"machine",
+  "lateral raise (dumbbell)":"dumbbell","cable lateral raise":"cable","reverse fly (machine)":"machine",
+  "face pull":"cable","bicep curl (dumbbell)":"dumbbell","db bicep curl":"dumbbell",
+  "hammer curl":"dumbbell","cable curl":"cable","triceps pushdown":"cable",
+  "triceps extension (dumbbell)":"dumbbell","skull crusher":"barbell","bench dips":"body",
+  "hanging leg raise":"body","captain's chair leg raise":"body","cable crunch":"cable","plank":"mat",
+};
+/* fallback for exercises the catalog doesn't know (custom or imported names) */
+const EQ_RULES=[
+  [/cable|pushdown|pulldown|crossover|face pull/,"cable"],
+  [/machine|lever|plate-?loaded|smith|v-squat|leg press|leg extension|leg curl|pec deck/,"machine"],
+  [/dumbbell|\bdb\b|goblet|bulgarian|lunge|arnold|hammer curl/,"dumbbell"],
+  [/barbell|deadlift|hip thrust|skull crusher|\bez[- ]bar\b/,"barbell"],
+  [/pull ?-?up|chin ?-?up|push ?-?up|\bdips?\b|hanging|captain|back extension|muscle ?-?up/,"body"],
+  [/plank|crunch|sit ?-?up|ab wheel|hollow|russian twist/,"mat"],
+];
+/* own-property lookups only: a name like "constructor" or "__proto__" would
+   otherwise resolve up the prototype chain and drop the card out of every zone */
+const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+const ZONE_KEYS=ZONES.map(z=>z.k);
+function eqOf(name){
+  const n=norm(name);
+  let z=null;
+  if(has(EQ,n)) z=EQ[n];
+  else if(has(ALT_ALIAS,n)&&has(EQ,ALT_ALIAS[n])) z=EQ[ALT_ALIAS[n]];
+  else for(const [re,zk] of EQ_RULES) if(re.test(n)){ z=zk; break; }
+  /* unknown or unrecognized gear sits with the machines rather than vanishing */
+  return ZONE_KEYS.includes(z)?z:"machine";
 }
 let swapIdx=null;
 function showSwap(xi){
@@ -501,6 +639,54 @@ function showSwap(xi){
 function closeSwap(ev){
   if(ev&&ev.target!==$("swapBg")) return; /* backdrop click only */
   $("swapBg").classList.remove("show");
+}
+/* ---------- add an exercise mid-workout ---------- */
+function showAdd(){
+  $("addFilter").value="";
+  renderAddList();
+  $("addBg").classList.add("show");
+}
+function closeAdd(ev){
+  if(ev&&ev.target!==$("addBg")) return; /* backdrop click only */
+  $("addBg").classList.remove("show");
+}
+function renderAddList(){
+  const q=norm($("addFilter").value);
+  const have=new Set(plans[activePlan].routines[currentRoutine].ex.map(e=>norm(e.n)));
+  const hits=ALT_LIST.filter(a=>!q||norm(a.n).includes(q)||a.grp.some(g=>g.includes(q))||eqOf(a.n).includes(q));
+  if(!hits.length){ $("addList").innerHTML='<p class="hint" style="padding:10px 0">Nothing matches — use “Custom exercise…” below.</p>'; return; }
+  const byZone={};
+  hits.forEach(a=>{ const z=eqOf(a.n); (byZone[z]=byZone[z]||[]).push(a); });
+  $("addList").innerHTML=ZONES.filter(z=>byZone[z.k]).map(z=>
+    `<div class="zhead">${esc(z.n)}</div>`+byZone[z.k].map(a=>{
+      const dup=have.has(norm(a.n));
+      return `<div class="altrow">
+        <div class="alt-head"><b>${esc(a.n)}</b><button class="ib" onclick="showInfo('${jsq(a.n)}')" title="How to do this exercise">i</button></div>
+        <div class="alt-why">${esc(a.why)}</div>
+        <button class="sbtn" onclick="addFromCatalog('${jsq(a.n)}')">${dup?"Add again":"Add"}</button>
+      </div>`;
+    }).join("")).join("");
+}
+function pushEx(ex){
+  const arr=plans[activePlan].routines[currentRoutine].ex;
+  arr.push(ex);
+  const xi=arr.length-1;
+  persistData(); closeAdd(); renderWorkout();
+  toast("Added "+ex.n);
+  /* by index, not by position: in gym order the new card is inside its zone */
+  const card=$("ex-"+xi);
+  if(card) card.scrollIntoView({block:"center", behavior:REDUCED?"auto":"smooth"});
+}
+function addFromCatalog(name){
+  const a=ALT_LIST.find(x=>norm(x.n)===norm(name)); if(!a) return;
+  pushEx({n:a.n,sets:a.sets,reps:a.reps,w:a.w,rep:a.rep,rest:a.rest,note:a.note||""});
+}
+function addCustom(){
+  const name=prompt("Exercise name:","");
+  if(name===null) return;
+  const n=name.trim();
+  if(!n){ toast("Give the exercise a name", true); return; }
+  pushEx({n,sets:3,reps:"10",w:20,rep:10,rest:60,note:""});
 }
 function doSwap(name){
   const alt=ALT_LIST.find(a=>norm(a.n)===norm(name));
@@ -540,7 +726,7 @@ const store = {
 const DATA="gym-data-v3", LOG="gym-log-v1", DRAFT="gym-draft-v1", REST="gym-rest-v1", AUTOBAK="gym-autobak-v1";
 
 /* ---------- state ---------- */
-let plans={}, activePlan="1", restCfg={}, history=[];
+let plans={}, activePlan="1", restCfg={}, history=[], gymOrder=false;
 let session={plan:null, routine:null, start:null, state:{}};
 let currentRoutine="A", restEnd=null, restDone=false, view="workout";
 
@@ -560,11 +746,11 @@ const norm=s=>String(s).trim().toLowerCase();
 /* ---------- init ---------- */
 async function init(){
   const data=await store.get(DATA);
-  if(data){ plans=data.plans; activePlan=data.activePlan; restCfg=data.restCfg||{}; }
+  if(data){ plans=data.plans; activePlan=data.activePlan; restCfg=data.restCfg||{}; gymOrder=!!data.gymOrder; }
   else{
     plans=DEFAULT_PLANS;
     restCfg=(await store.get(REST))||{};
-    await store.set(DATA,{plans,activePlan,restCfg});
+    await store.set(DATA,{plans,activePlan,restCfg,gymOrder});
   }
   if(!plans||!Object.keys(plans).length) plans=DEFAULT_PLANS;
   if(!plans[activePlan]) activePlan=Object.keys(plans).sort()[0];
@@ -606,13 +792,13 @@ async function restoreAutoBackup(){
   restCfg=b.restCfg||{}; history=Array.isArray(b.history)?b.history:[];
   session={plan:null,routine:null,start:null,state:{}};
   await store.del(DRAFT); skipRest();
-  await store.set(DATA,{plans,activePlan,restCfg});
+  await store.set(DATA,{plans,activePlan,restCfg,gymOrder});
   await store.set(LOG,history);
   currentRoutine=nextRoutine();
   toast("Auto-backup restored: "+history.length+" workouts");
   renderPlanSelects(); renderEditor(); renderWorkout(); updateStatus();
 }
-function persistData(){ store.set(DATA,{plans,activePlan,restCfg}); }
+function persistData(){ store.set(DATA,{plans,activePlan,restCfg,gymOrder}); }
 function routineKeys(p){ return Object.keys(plans[p].routines).sort(); }
 function firstRoutine(){ return routineKeys(activePlan)[0]; }
 function nextRoutine(){
@@ -690,7 +876,10 @@ function renderWorkout(){
   $("tabs").innerHTML=rKeys.map(r=>
     `<div class="tab ${r===currentRoutine?"on":""}" onclick="switchTab('${jsq(r)}')">${esc(r)}<small>${esc(plans[activePlan].routines[r].name||"")}</small></div>`
   ).join("");
-  $("exercises").innerHTML=plans[activePlan].routines[currentRoutine].ex.map((ex,xi)=>{
+  const list=plans[activePlan].routines[currentRoutine].ex;
+  /* cards always carry their ORIGINAL index, so reordering the view never
+     misroutes a set edit into the wrong exercise */
+  const card=(ex,xi)=>{
     const st=getState(currentRoutine,xi,ex);
     const prev=lastEntry(ex.n);
     /* history values come from imported files — escape them like any input */
@@ -706,7 +895,7 @@ function renderWorkout(){
         <input type="number" inputmode="numeric" placeholder="reps" value="${esc(s.r)}" oninput="upd(${xi},${i},'r',this.value)">
         <button class="chk" onclick="toggleDone(${xi},${i})">✓</button>
       </div>`).join("");
-    return `<div class="ex">
+    return `<div class="ex" id="ex-${xi}">
       <div class="topline">
         <div class="namewrap"><h2>${esc(ex.n)}</h2><button class="ib" onclick="showInfo('${jsq(ex.n)}')" title="How to do this exercise">i</button><button class="ib" style="font-style:normal;font-family:inherit" onclick="showSwap(${xi})" title="Swap for a similar exercise">⇄</button></div>
         <span class="rest-cfg">Rest <input type="number" inputmode="numeric" value="${esc(restFor(ex))}" onchange="setRestCfg(${xi},this.value)"> s</span>
@@ -717,9 +906,29 @@ function renderWorkout(){
       <div class="sets">${rows}</div>
       <button class="addset" onclick="addSet(${xi})">+ Set</button>
     </div>`;
-  }).join("")||'<p class="hint" style="text-align:center;padding:18px 8px">No exercises in this routine yet.<br>Add them in <b>Manage → Workout Plans</b>, or restore an existing JSON backup.</p>';
+  };
+  let body;
+  if(!list.length){
+    body='<p class="hint" style="text-align:center;padding:18px 8px">No exercises in this routine yet.<br>Add one with <b>+ Add exercise</b> below, or restore an existing JSON backup.</p>';
+  }else if(gymOrder){
+    const byZone={};
+    list.forEach((ex,xi)=>{ const z=eqOf(ex.n); (byZone[z]=byZone[z]||[]).push([ex,xi]); });
+    body=ZONES.filter(z=>byZone[z.k]).map(z=>
+      `<div class="zhead">${esc(z.n)} <span>${byZone[z.k].length}</span></div>`
+      +byZone[z.k].map(([ex,xi])=>card(ex,xi)).join("")).join("");
+  }else{
+    body=list.map(card).join("");
+  }
+  $("exercises").innerHTML=body
+    +'<button class="addex" onclick="showAdd()">+ Add exercise</button>';
+  $("orderBtn").textContent=gymOrder?"⇅ Gym order":"⇅ Plan order";
+  $("orderBtn").classList.toggle("on",gymOrder);
   $("count").textContent=history.length?history.length+" workouts saved":"";
   updateProgress();
+}
+function toggleOrder(){
+  gymOrder=!gymOrder; persistData(); renderWorkout();
+  toast(gymOrder?"Grouped by gym equipment":"Back to plan order");
 }
 function updateProgress(){
   const rt=plans[activePlan]&&plans[activePlan].routines[currentRoutine];
@@ -978,7 +1187,7 @@ function importJSON(file){
       /* the old session/draft describes plans that no longer exist — drop them */
       session={plan:null,routine:null,start:null,state:{}};
       await store.del(DRAFT); skipRest();
-      await store.set(DATA,{plans,activePlan,restCfg});
+      await store.set(DATA,{plans,activePlan,restCfg,gymOrder});
       await store.set(LOG,history);
       currentRoutine=nextRoutine();
       toast("Restored: "+history.length+" workouts");
