@@ -44,8 +44,11 @@ self-contained `index.html`, no build step.
 - Each exercise card has an **i** button: a bottom sheet with an English how-to, the muscles worked,
   and a demo GIF (hotlinked from fitnessprogramer.com, fetched only when the sheet is opened, with
   referrer disabled; if it can't load, the sheet offers video/GIF search links instead).
-- The service worker only handles same-origin GET requests; the CSP allows images over https for the
-  exercise demo GIFs but blocks all other external connections;
+- Everything you type is auto-saved in the background: the in-progress workout draft is written on
+  every change and flushed the moment the app is hidden or closed, and a rolling safety snapshot is
+  kept after every saved workout and before every restore/delete (Manage → Restore auto-backup).
+- The service worker only handles same-origin GET requests; the CSP allows images only from
+  fitnessprogramer.com (the exercise demo GIFs) and blocks all other external connections;
   the site sends no referrer and carries a `noindex` meta tag asking search engines not to index it.
   (robots.txt only takes effect if the app is ever hosted at a domain root — on a GitHub Pages
   project path crawlers don't read it, so the meta tag is what actually applies.)

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#131416">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: https:; manifest-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: https://fitnessprogramer.com; manifest-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,22 +14,26 @@
 <title>Gym Tracker</title>
 <style>
   :root{
-    --bg:#131416; --card:#1c1e21; --line:#2b2e33;
-    --ink:#eceff1; --mute:#98a0a8; --accent:#f5b301; --accent-ink:#141210;
+    --bg:#0f1012; --card:#1a1c20; --card2:#232529; --line:#2c2f35;
+    --ink:#eef1f4; --mute:#9aa3ac; --accent:#f5b301; --accent2:#ffd34d; --accent-ink:#141210;
     --ok:#4cc38a; --danger:#e5484d;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   body{
-    margin:0; background:var(--bg); color:var(--ink);
+    margin:0; color:var(--ink);
+    background:radial-gradient(120vw 46vh at 50% -12vh, #1e2026 0%, var(--bg) 62%) fixed, var(--bg);
     font-family:-apple-system,"Segoe UI",Roboto,"Heebo",Arial,sans-serif;
-    font-size:16px; padding:14px 12px 150px;
+    font-size:16px; padding:14px 12px calc(150px + env(safe-area-inset-bottom));
   }
+  button{font-family:inherit;}
   h1{font-size:15px; letter-spacing:.14em; color:var(--mute); font-weight:600; margin:2px 2px 12px;}
   h1 b{color:var(--accent); letter-spacing:0;}
   .viewtabs{display:flex; gap:6px; margin-bottom:14px;}
   .vtab{flex:1; text-align:center; padding:9px 0; border-radius:11px; font-size:13.5px; font-weight:700;
-    background:var(--card); border:1px solid var(--line); color:var(--mute); cursor:pointer; user-select:none;}
-  .vtab.on{color:var(--accent); border-color:var(--accent);}
+    background:var(--card); border:1px solid var(--line); color:var(--mute); cursor:pointer; user-select:none;
+    transition:color .15s, border-color .15s, transform .06s;}
+  .vtab:active{transform:scale(.96);}
+  .vtab.on{color:var(--accent); border-color:var(--accent); box-shadow:0 2px 12px rgba(245,179,1,.12);}
   select{
     background:var(--card); border:1px solid var(--line); border-radius:11px; color:var(--ink);
     font-size:15px; padding:9px 10px; width:100%;
@@ -41,11 +45,18 @@
   .planrow{margin-bottom:12px;}
   .tabs{display:flex; gap:8px; margin-bottom:14px;}
   .tab{flex:1; text-align:center; padding:11px 0; border-radius:12px; font-weight:700;
-    background:var(--card); border:1px solid var(--line); color:var(--mute); cursor:pointer; user-select:none;}
-  .tab.on{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+    background:var(--card); border:1px solid var(--line); color:var(--mute); cursor:pointer; user-select:none;
+    transition:background .15s, color .15s, transform .06s;}
+  .tab:active{transform:scale(.96);}
+  .tab.on{background:linear-gradient(135deg, var(--accent), var(--accent2)); color:var(--accent-ink);
+    border-color:var(--accent); box-shadow:0 4px 16px rgba(245,179,1,.22);}
   .tab small{display:block; font-weight:400; font-size:11px; margin-top:2px;}
+  .pbar{height:4px; background:var(--line); border-radius:2px; margin:-6px 0 14px; overflow:hidden;}
+  .pbar i{display:block; height:100%; width:0; border-radius:2px;
+    background:linear-gradient(90deg, var(--accent), var(--accent2)); transition:width .35s ease;}
   .ex{background:var(--card); border:1px solid var(--line); border-radius:14px;
-    padding:12px 12px 10px; margin-bottom:12px; border-inline-start:3px solid var(--accent);}
+    padding:12px 12px 10px; margin-bottom:12px; border-inline-start:3px solid var(--accent);
+    box-shadow:0 2px 10px rgba(0,0,0,.22);}
   .ex h2{margin:0; font-size:16px;}
   .topline{display:flex; justify-content:space-between; align-items:center; gap:8px;}
   .namewrap{display:flex; align-items:center; gap:7px; min-width:0;}
@@ -56,6 +67,7 @@
   .rest-cfg input{width:44px; background:#232529; border:1px solid var(--line); border-radius:8px;
     color:var(--ink); font-size:13px; padding:4px 2px; text-align:center;}
   .ex .meta{color:var(--mute); font-size:12.5px; margin:3px 0 2px;}
+  .ex .meta .scount{color:var(--ok); font-weight:700;}
   .ex .note{color:var(--mute); font-size:12.5px; margin:0 0 8px;}
   .ex .prev{font-size:12.5px; color:var(--ok); margin:0 0 8px; font-variant-numeric:tabular-nums;}
   .sets{display:flex; flex-direction:column; gap:6px;}
@@ -67,11 +79,13 @@
   .set input:focus{outline:none; border-color:var(--accent);}
   .set .u{color:var(--mute); font-size:11px; width:22px;}
   .chk{width:46px; height:42px; flex:none; border-radius:10px; border:1px solid var(--line);
-    background:#232529; color:var(--mute); font-size:20px; font-weight:800; cursor:pointer;}
+    background:var(--card2); color:var(--mute); font-size:20px; font-weight:800; cursor:pointer;
+    transition:background .15s, border-color .15s, color .15s, transform .1s;}
+  .chk:active{transform:scale(.92);}
   .set.done .chk{background:var(--ok); border-color:var(--ok); color:#0c1a13;}
   .addset{margin-top:8px; background:none; border:1px dashed var(--line); color:var(--mute);
     border-radius:10px; padding:7px; width:100%; font-size:13px; cursor:pointer;}
-  .restbar{position:fixed; bottom:76px; right:12px; left:12px; z-index:8;
+  .restbar{position:fixed; bottom:calc(76px + env(safe-area-inset-bottom)); right:12px; left:12px; z-index:8;
     background:var(--accent); color:var(--accent-ink); border-radius:14px;
     padding:12px 16px; display:none; align-items:center; justify-content:space-between;
     font-weight:800; box-shadow:0 6px 24px rgba(0,0,0,.5);}
@@ -80,9 +94,13 @@
   .restbar .skip{font-size:13px; font-weight:700; background:rgba(0,0,0,.15); border:none;
     color:var(--accent-ink); border-radius:10px; padding:8px 14px; cursor:pointer;}
   .bar{position:fixed; bottom:0; right:0; left:0; display:flex; gap:10px;
-    padding:12px; background:linear-gradient(transparent, var(--bg) 30%); z-index:7;}
-  .btn{flex:1; padding:14px 0; border-radius:14px; border:none; font-size:16px; font-weight:800; cursor:pointer;}
-  .btn.save{background:var(--accent); color:var(--accent-ink);}
+    padding:12px 12px calc(12px + env(safe-area-inset-bottom));
+    background:linear-gradient(transparent, var(--bg) 30%); z-index:7;}
+  .btn{flex:1; padding:14px 0; border-radius:14px; border:none; font-size:16px; font-weight:800; cursor:pointer;
+    transition:filter .15s, transform .06s;}
+  .btn:active{transform:scale(.98);}
+  .btn.save{background:linear-gradient(135deg, var(--accent), var(--accent2)); color:var(--accent-ink);
+    box-shadow:0 4px 18px rgba(245,179,1,.28);}
   .btn.csv{background:var(--card); color:var(--ink); border:1px solid var(--line); flex:.55;}
   .toast{position:fixed; top:14px; right:50%; transform:translateX(50%);
     background:var(--ok); color:#0c1a13; font-weight:700; padding:10px 18px; border-radius:12px;
@@ -116,11 +134,14 @@
   .hidden{display:none;}
   /* exercise info modal */
   .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:20;
-    display:none; align-items:flex-end; justify-content:center;}
-  .modal-bg.show{display:flex;}
+    display:flex; align-items:flex-end; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity .22s;}
+  .modal-bg.show{opacity:1; pointer-events:auto;}
   .modal{background:var(--card); border:1px solid var(--line); border-bottom:none;
-    border-radius:18px 18px 0 0; padding:16px 16px 22px; width:100%; max-width:560px;
-    max-height:84vh; overflow-y:auto;}
+    border-radius:18px 18px 0 0; padding:16px 16px calc(22px + env(safe-area-inset-bottom));
+    width:100%; max-width:560px; max-height:84vh; overflow-y:auto;
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.2,.9,.3,1);}
+  .modal-bg.show .modal{transform:translateY(0);}
   .modal h2{margin:0 0 3px; font-size:18px;}
   .modal .mus{color:var(--accent); font-size:13px; font-weight:600; margin:0 0 12px;}
   .modal .gifwrap{margin:0 0 12px;}
@@ -139,6 +160,11 @@
   .altrow .alt-head b{font-size:15px;}
   .altrow .alt-why{color:var(--mute); font-size:12.5px; margin-bottom:8px;}
   .altrow .sbtn{padding:9px 12px;}
+  .sbtn{transition:background .15s, transform .06s;}
+  .sbtn:active{transform:scale(.98);}
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; animation:none !important;}
+  }
 </style>
 </head>
 <body>
@@ -157,6 +183,7 @@
   </div>
   <div class="planrow"><select id="planSel" onchange="switchPlan(this.value)"></select></div>
   <div class="tabs" id="tabs"></div>
+  <div class="pbar hidden" id="pbar"><i id="pbarFill"></i></div>
   <div id="exercises"></div>
   <div class="count" id="count"></div>
 </div>
@@ -185,9 +212,13 @@
       <button class="sbtn" onclick="document.getElementById('hevyFile').click()">Import Hevy CSV</button>
       <button class="sbtn" onclick="document.getElementById('jsonFile').click()">Restore JSON</button>
     </div>
+    <div class="row">
+      <button class="sbtn" onclick="restoreAutoBackup()">Restore auto-backup</button>
+    </div>
     <input type="file" id="hevyFile" accept=".csv" class="hidden" onchange="importHevy(this.files[0])">
     <input type="file" id="jsonFile" accept=".json" class="hidden" onchange="importJSON(this.files[0])">
-    <p class="hint">Backup JSON = all your data (plans + history). It is also the format the AI/MCP integration reads and updates.</p>
+    <p class="hint">Backup JSON = all your data (plans + history). It is also the format the AI/MCP integration reads and updates.
+    A safety snapshot is kept automatically before every restore/delete and after every saved workout — "Restore auto-backup" brings it back.</p>
   </div>
 </div>
 
@@ -506,7 +537,7 @@ const store = {
     try{ localStorage.removeItem(k); }catch(e){}
   }
 };
-const DATA="gym-data-v3", LOG="gym-log-v1", DRAFT="gym-draft-v1", REST="gym-rest-v1";
+const DATA="gym-data-v3", LOG="gym-log-v1", DRAFT="gym-draft-v1", REST="gym-rest-v1", AUTOBAK="gym-autobak-v1";
 
 /* ---------- state ---------- */
 let plans={}, activePlan="1", restCfg={}, history=[];
@@ -519,8 +550,11 @@ function toast(msg, err){
   setTimeout(()=>t.className="toast"+(err?" err":""), 2600);
 }
 const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-/* for strings inside single-quoted JS string literals in inline handlers */
-const jsq=s=>String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,"\\x22").replace(/</g,"\\x3c");
+/* for strings inside single-quoted JS string literals in inline handlers.
+   Escape & FIRST: these strings live in an HTML attribute that is entity-decoded
+   before the JS is parsed, so a literal "&#39;" in the value would otherwise
+   decode to ' and break out of the string (DOM-XSS via an imported backup). */
+const jsq=s=>String(s).replace(/&/g,"&amp;").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,"\\x22").replace(/</g,"\\x3c");
 const norm=s=>String(s).trim().toLowerCase();
 
 /* ---------- init ---------- */
@@ -539,8 +573,11 @@ async function init(){
   const legacyPlan=Object.keys(plans).sort()[0];
   history.forEach(h=>{ if(!h.plan) h.plan=legacyPlan; });
   const d=await store.get(DRAFT);
-  if(d && d.start && plans[d.plan] && plans[d.plan].routines[d.routine]){
-    session=d; activePlan=d.plan; currentRoutine=d.routine; toast("Open workout restored");
+  /* restore a running workout, or values typed before the first ✓ */
+  if(d && (d.start || (d.state && Object.keys(d.state).length))
+       && plans[d.plan] && plans[d.plan].routines[d.routine]){
+    session=d; activePlan=d.plan; currentRoutine=d.routine;
+    if(d.start) toast("Open workout restored");
   }
   else{
     if(d) store.del(DRAFT); /* draft references a plan/routine that no longer exists */
@@ -548,8 +585,32 @@ async function init(){
   }
   renderWorkout(); updateStatus();
   setInterval(tick, 500);
+  /* background save: flush the debounced draft the moment the app is hidden
+     or the tab is being killed — mobile browsers reclaim PWAs aggressively */
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") flushDraft(); });
+  window.addEventListener("pagehide", flushDraft);
   if("serviceWorker" in navigator && location.protocol.startsWith("http"))
     navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+/* rolling safety snapshot of everything — written after each saved workout
+   and before every destructive action, restorable from Manage → Data */
+function autoBackup(){
+  return store.set(AUTOBAK,{saved:new Date().toISOString(), plans, activePlan, restCfg, history});
+}
+async function restoreAutoBackup(){
+  const b=await store.get(AUTOBAK);
+  if(!b || !b.plans || !Object.keys(b.plans).length){ toast("No auto-backup yet", true); return; }
+  if(!confirm("Restore the automatic snapshot from "+String(b.saved||"?").slice(0,16).replace("T"," ")+"? This replaces current data.")) return;
+  plans=b.plans;
+  activePlan=(b.activePlan && plans[b.activePlan])?b.activePlan:Object.keys(plans).sort()[0];
+  restCfg=b.restCfg||{}; history=Array.isArray(b.history)?b.history:[];
+  session={plan:null,routine:null,start:null,state:{}};
+  await store.del(DRAFT); skipRest();
+  await store.set(DATA,{plans,activePlan,restCfg});
+  await store.set(LOG,history);
+  currentRoutine=nextRoutine();
+  toast("Auto-backup restored: "+history.length+" workouts");
+  renderPlanSelects(); renderEditor(); renderWorkout(); updateStatus();
 }
 function persistData(){ store.set(DATA,{plans,activePlan,restCfg}); }
 function routineKeys(p){ return Object.keys(plans[p].routines).sort(); }
@@ -596,6 +657,7 @@ function renderPlanSelects(){
 function switchPlan(p){
   if(session.start){ $("planSel").value=activePlan; toast("Finish or save the open workout first", true); return; }
   activePlan=p; session={plan:null,routine:null,start:null,state:{}};
+  store.del(DRAFT); /* typed-only draft belongs to the previous plan */
   currentRoutine=nextRoutine(); persistData(); renderWorkout(); updateStatus();
 }
 function stateKey(r,i){ return r+"|"+i; }
@@ -631,23 +693,25 @@ function renderWorkout(){
   $("exercises").innerHTML=plans[activePlan].routines[currentRoutine].ex.map((ex,xi)=>{
     const st=getState(currentRoutine,xi,ex);
     const prev=lastEntry(ex.n);
+    /* history values come from imported files — escape them like any input */
     const prevTxt=prev
-      ? "Last time ("+prev.date.slice(5).replace("-",".")+"): "+prev.sets.map(s=>(s.w||"BW")+"×"+s.r).join(", ")
-      : "First workout — suggested weight: "+(ex.w||"bodyweight");
+      ? "Last time ("+esc(String(prev.date).slice(5).replace("-","."))+"): "+prev.sets.map(s=>(s.w?esc(s.w):"BW")+"×"+esc(s.r)).join(", ")
+      : "First workout — suggested weight: "+(ex.w?esc(ex.w):"bodyweight");
+    const done=st.sets.filter(s=>s.done).length;
     const rows=st.sets.map((s,i)=>`
       <div class="set ${s.done?"done":""}" id="row-${xi}-${i}">
         <span class="n">${i+1}</span>
-        <input type="number" inputmode="decimal" step="0.5" placeholder="weight" value="${s.w}" oninput="upd(${xi},${i},'w',this.value)">
+        <input type="number" inputmode="decimal" step="0.5" placeholder="weight" value="${esc(s.w)}" oninput="upd(${xi},${i},'w',this.value)">
         <span class="u">kg</span>
-        <input type="number" inputmode="numeric" placeholder="reps" value="${s.r}" oninput="upd(${xi},${i},'r',this.value)">
+        <input type="number" inputmode="numeric" placeholder="reps" value="${esc(s.r)}" oninput="upd(${xi},${i},'r',this.value)">
         <button class="chk" onclick="toggleDone(${xi},${i})">✓</button>
       </div>`).join("");
     return `<div class="ex">
       <div class="topline">
         <div class="namewrap"><h2>${esc(ex.n)}</h2><button class="ib" onclick="showInfo('${jsq(ex.n)}')" title="How to do this exercise">i</button><button class="ib" style="font-style:normal;font-family:inherit" onclick="showSwap(${xi})" title="Swap for a similar exercise">⇄</button></div>
-        <span class="rest-cfg">Rest <input type="number" inputmode="numeric" value="${restFor(ex)}" onchange="setRestCfg(${xi},this.value)"> s</span>
+        <span class="rest-cfg">Rest <input type="number" inputmode="numeric" value="${esc(restFor(ex))}" onchange="setRestCfg(${xi},this.value)"> s</span>
       </div>
-      <div class="meta">${ex.sets}×${esc(ex.reps)}</div>
+      <div class="meta">${esc(ex.sets)}×${esc(ex.reps)} <span class="scount" id="sc-${xi}">${done?"· "+done+"/"+st.sets.length+" ✓":""}</span></div>
       ${ex.note?`<div class="note">${esc(ex.note)}</div>`:""}
       <div class="prev">${prevTxt}</div>
       <div class="sets">${rows}</div>
@@ -655,6 +719,21 @@ function renderWorkout(){
     </div>`;
   }).join("")||'<p class="hint" style="text-align:center;padding:18px 8px">No exercises in this routine yet.<br>Add them in <b>Manage → Workout Plans</b>, or restore an existing JSON backup.</p>';
   $("count").textContent=history.length?history.length+" workouts saved":"";
+  updateProgress();
+}
+function updateProgress(){
+  const rt=plans[activePlan]&&plans[activePlan].routines[currentRoutine];
+  const exs=rt?rt.ex:[];
+  let d=0,t=0;
+  exs.forEach((ex,xi)=>{
+    const st=session.state[stateKey(currentRoutine,xi)];
+    d+=st?st.sets.filter(s=>s.done).length:0;
+    t+=st?st.sets.length:ex.sets;
+  });
+  const bar=$("pbar");
+  if(!t){ bar.classList.add("hidden"); return; }
+  bar.classList.remove("hidden");
+  $("pbarFill").style.width=Math.round(100*d/t)+"%";
 }
 function switchTab(r){ currentRoutine=r; renderWorkout(); window.scrollTo(0,0); }
 function exAt(xi){ return plans[activePlan].routines[currentRoutine].ex[xi]; }
@@ -668,6 +747,9 @@ function toggleDone(xi,i){
     if(!session.start){ session.start=Date.now(); session.plan=activePlan; session.routine=currentRoutine; updateStatus(); }
     startRest(restFor(ex));
   }
+  const done=st.sets.filter(x=>x.done).length;
+  const chip=$("sc-"+xi); if(chip) chip.textContent=done?"· "+done+"/"+st.sets.length+" ✓":"";
+  updateProgress();
   persistDraft();
 }
 function addSet(xi){
@@ -678,9 +760,17 @@ function addSet(xi){
 }
 let draftTimer=null;
 function persistDraft(){
-  if(!session.start) return;
+  /* save anything the user touched — even before the first checked set */
+  if(!session.start && !Object.keys(session.state).length) return;
+  session.plan=session.plan||activePlan;
+  session.routine=session.routine||currentRoutine;
   clearTimeout(draftTimer);
-  draftTimer=setTimeout(()=>store.set(DRAFT,session), 600);
+  draftTimer=setTimeout(()=>{ draftTimer=null; store.set(DRAFT,session); }, 600);
+}
+function flushDraft(){
+  if(!session.start && !Object.keys(session.state).length) return;
+  clearTimeout(draftTimer); draftTimer=null;
+  store.set(DRAFT,session);
 }
 function startRest(sec){ restEnd=Date.now()+sec*1000; restDone=false; $("restbar").classList.add("show"); }
 function skipRest(){ restEnd=null; $("restbar").classList.remove("show"); }
@@ -728,6 +818,7 @@ async function saveWorkout(){
   const ok=await store.set(LOG,history);
   if(!ok){ history.pop(); toast("Save failed — the workout is still here, try again", true); return; }
   await store.del(DRAFT);
+  autoBackup(); /* background safety snapshot after every saved workout */
   session={plan:null,routine:null,start:null,state:{}};
   skipRest();
   toast("Saved"+(dur?" · "+dur+" min":""));
@@ -742,11 +833,11 @@ function renderHistory(){
     const idx=history.length-1-ri;
     const planName=plans[h.plan]?plans[h.plan].name:(h.plan==="hevy"?"Hevy import":h.plan);
     const nSets=h.entries.reduce((a,e)=>a+e.sets.length,0);
-    const body=h.entries.map(e=>`<div><b>${esc(e.name)}</b>: ${e.sets.map(s=>(s.w||"BW")+"×"+s.r).join(", ")}</div>`).join("");
+    const body=h.entries.map(e=>`<div><b>${esc(e.name)}</b>: ${e.sets.map(s=>(s.w?esc(s.w):"BW")+"×"+esc(s.r)).join(", ")}</div>`).join("");
     return `<details class="hist">
       <summary>
-        <span class="hd">${h.date} · ${esc(h.routine)}</span>
-        <span class="hm">${esc(planName)}${h.duration_min?" · "+h.duration_min+" min":""} · ${nSets} sets</span>
+        <span class="hd">${esc(h.date)} · ${esc(h.routine)}</span>
+        <span class="hm">${esc(planName)}${h.duration_min?" · "+esc(h.duration_min)+" min":""} · ${nSets} sets</span>
       </summary>
       <div class="body">${body}
         <button class="del" onclick="delWorkout(${idx})">Delete workout</button>
@@ -756,6 +847,7 @@ function renderHistory(){
 }
 async function delWorkout(idx){
   if(!confirm("Delete this workout?")) return;
+  await autoBackup(); /* snapshot before anything destructive */
   history.splice(idx,1);
   await store.set(LOG,history);
   renderHistory(); toast("Deleted");
@@ -776,10 +868,10 @@ function renderEditor(){
           <button class="delx" onclick="delEx('${jsq(p)}','${jsq(r)}',${i})">✕</button>
         </div>
         <div class="row">
-          <input class="sm" type="number" value="${ex.sets}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'sets',parseInt(this.value)||3)" title="Sets">
+          <input class="sm" type="number" value="${esc(ex.sets)}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'sets',parseInt(this.value)||3)" title="Sets">
           <input class="sm" value="${esc(ex.reps)}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'reps',this.value)" title="Reps">
-          <input class="sm" type="number" step="0.5" value="${ex.w}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'w',parseFloat(this.value)||0)" title="Weight">
-          <input class="sm" type="number" value="${ex.rest}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'rest',parseInt(this.value)||60)" title="Rest">
+          <input class="sm" type="number" step="0.5" value="${esc(ex.w)}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'w',parseFloat(this.value)||0)" title="Weight">
+          <input class="sm" type="number" value="${esc(ex.rest)}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'rest',parseInt(this.value)||60)" title="Rest">
         </div>
       </div>`;
     });
@@ -815,6 +907,7 @@ function delRoutine(p,r){
   if(routineKeys(p).length<=1){ toast("Can't delete the last routine in a plan", true); return; }
   if(session.start && p===activePlan){ toast("A workout is open — finish it before deleting routines", true); return; }
   if(!confirm("Delete routine "+r+(rt.name?" ("+rt.name+")":"")+" and its "+rt.ex.length+" exercises? History is kept.")) return;
+  autoBackup();
   delete plans[p].routines[r];
   persistData(); renderEditor();
   if(p===activePlan){
@@ -845,12 +938,18 @@ async function shareOrDownload(blob, fname, mime){
   }
   download(blob, fname);
 }
+/* CSV cell: escape quotes and neutralize spreadsheet formula injection */
+function csvCell(v){
+  v=String(v==null?"":v).replace(/"/g,'""');
+  return '"'+(/^[=+\-@\t\r]/.test(v)?"'"+v:v)+'"';
+}
 async function exportCSV(){
   if(!history.length){ toast("No workouts to export", true); return; }
   let csv="Date,Plan,Workout,Duration_min,Exercise,Set,Weight_kg,Reps\n";
   history.forEach(w=>w.entries.forEach(e=>e.sets.forEach((s,i)=>{
     const planName=plans[w.plan]?plans[w.plan].name:w.plan;
-    csv+=`${w.date},"${planName}",${w.routine},${w.duration_min||""},"${e.name}",${i+1},${s.w||0},${s.r}\n`;
+    csv+=[csvCell(w.date),csvCell(planName),csvCell(w.routine),csvCell(w.duration_min||""),
+          csvCell(e.name),i+1,csvCell(s.w||0),csvCell(s.r)].join(",")+"\n";
   })));
   await shareOrDownload(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"}), "workouts.csv", "text/csv");
 }
@@ -867,8 +966,12 @@ function importJSON(file){
       const plansOk = d && d.plans && typeof d.plans==="object" && Object.keys(d.plans).length>0
         && Object.values(d.plans).every(pl=>pl && pl.routines && typeof pl.routines==="object"
              && Object.keys(pl.routines).length>0 && Object.values(pl.routines).every(rt=>rt && Array.isArray(rt.ex)));
-      if(!plansOk || !Array.isArray(d.history)) throw new Error();
+      const histOk = Array.isArray(d.history)
+        && d.history.every(h=>h && typeof h==="object" && Array.isArray(h.entries)
+             && h.entries.every(e=>e && Array.isArray(e.sets)));
+      if(!plansOk || !histOk) throw new Error();
       if(!confirm("Restore from this backup? It replaces all current data"+(session.start?" and discards the open workout":"")+".")) return;
+      await autoBackup(); /* keep a way back from a bad restore */
       plans=d.plans;
       activePlan=(d.activePlan && plans[d.activePlan])?d.activePlan:Object.keys(plans).sort()[0];
       restCfg=d.restCfg||{}; history=d.history;
