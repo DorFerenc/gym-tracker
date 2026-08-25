@@ -133,6 +133,12 @@
     text-decoration:none;}
   .modal .close{width:100%; background:var(--accent); color:var(--accent-ink); border:none;
     border-radius:12px; padding:12px 0; font-size:15px; font-weight:800; cursor:pointer;}
+  #infoBg{z-index:21;} /* info sheet opens on top of the swap sheet */
+  .altrow{border-top:1px solid var(--line); padding:11px 0 12px;}
+  .altrow .alt-head{display:flex; align-items:center; gap:7px; margin-bottom:3px;}
+  .altrow .alt-head b{font-size:15px;}
+  .altrow .alt-why{color:var(--mute); font-size:12.5px; margin-bottom:8px;}
+  .altrow .sbtn{padding:9px 12px;}
 </style>
 </head>
 <body>
@@ -205,6 +211,15 @@
     <p class="desc" id="infoDesc"></p>
     <div class="links" id="infoLinks"></div>
     <button class="close" onclick="closeInfo()">Close</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="swapBg" onclick="closeSwap(event)">
+  <div class="modal">
+    <h2 id="swapTitle"></h2>
+    <p class="hint" style="margin:0 0 4px">Same muscles, different angle or equipment. Swapping edits this routine (your history is kept) — swap again to go back.</p>
+    <div id="swapList"></div>
+    <button class="close" style="margin-top:12px" onclick="closeSwap()">Close</button>
   </div>
 </div>
 
@@ -317,6 +332,157 @@ function closeInfo(ev){
   if(ev&&ev.target!==$("infoBg")) return; /* backdrop click only */
   $("infoBg").classList.remove("show");
   $("infoGif").innerHTML=""; /* stop the gif when closed */
+}
+
+/* ---------- exercise swap: same muscles, different stimulus ----------
+   Every entry doubles as the defaults used when it is swapped into a
+   routine. grp is a list so an exercise can belong to several groups. */
+const ALT_LIST=[
+  /* chest */
+  {n:"Bench Press (Dumbbell)",grp:["chest"],why:"Free weights on a flat bench — each side works alone, deep stretch",sets:4,reps:"8-10",w:30,rep:8,rest:90,note:"per hand"},
+  {n:"Incline DB Press",grp:["chest"],why:"The incline shifts the load to the upper chest and front delts",sets:4,reps:"8-10",w:24,rep:8,rest:90,note:""},
+  {n:"Chest Press (Machine)",grp:["chest"],why:"Guided path — easy on the shoulders, simple to load heavy",sets:3,reps:"10",w:55,rep:10,rest:90,note:""},
+  {n:"Cable Fly",grp:["chest"],why:"Pure isolation with constant tension — the triceps stay out of it",sets:3,reps:"12-15",w:15,rep:12,rest:60,note:"per side"},
+  {n:"Push Up",grp:["chest"],why:"Bodyweight, anywhere — shoulders move freely and the core works too",sets:3,reps:"12-20",w:0,rep:12,rest:60,note:""},
+  /* horizontal pulls */
+  {n:"Dumbbell Row",grp:["row"],why:"One arm at a time with a free range — evens out side-to-side gaps",sets:3,reps:"10",w:30,rep:10,rest:90,note:""},
+  {n:"Iso Row (Plate-Loaded)",grp:["row"],why:"Chest-supported machine — zero lower-back fatigue, very strict",sets:3,reps:"10",w:20,rep:10,rest:90,note:"Plate weight per side, chest against the pad"},
+  {n:"Seated Cable Row",grp:["row"],why:"Constant cable tension and a big stretch at the front of each rep",sets:3,reps:"10",w:55,rep:10,rest:90,note:"Shoulders down and back"},
+  {n:"Barbell Row",grp:["row"],why:"The heaviest row — whole back plus lower-back and core stability",sets:3,reps:"8-10",w:40,rep:8,rest:90,note:""},
+  /* vertical pulls */
+  {n:"Pull Up",grp:["vpull"],why:"Bodyweight vertical pull — lats, grip and core all at once",sets:4,reps:"8",w:0,rep:8,rest:90,note:""},
+  {n:"Lat Pulldown",grp:["vpull"],why:"Same pull with adjustable weight — easier to control and shoulder-friendly",sets:3,reps:"10-12",w:50,rep:10,rest:90,note:""},
+  /* quads */
+  {n:"Squat (Barbell)",grp:["quads"],why:"The classic free-weight squat — most overall muscle and core demand",sets:3,reps:"10",w:65,rep:10,rest:120,note:""},
+  {n:"V-Squat (Hammer)",grp:["quads"],why:"Machine squat pattern — back supported, pure leg drive",sets:3,reps:"8-10",w:40,rep:8,rest:90,note:"Plate weight. Back flat against the pad"},
+  {n:"Leg Press (Plate-Loaded)",grp:["quads"],why:"Heavy leg work with the back fully supported — no balance needed",sets:3,reps:"10",w:70,rep:10,rest:90,note:"Full range of motion"},
+  {n:"Bulgarian Split Squat",grp:["quads"],why:"One leg at a time — balance, glutes and a deep quad stretch",sets:3,reps:"8-10",w:18,rep:8,rest:90,note:"per leg"},
+  {n:"Goblet Squat",grp:["quads"],why:"One dumbbell held at the chest — self-correcting form, very knee-friendly",sets:3,reps:"10-12",w:20,rep:10,rest:90,note:""},
+  {n:"Walking Lunge",grp:["quads"],why:"Moving single-leg work — quads, glutes and stability every step",sets:3,reps:"10",w:14,rep:10,rest:90,note:"per leg, dumbbells at sides"},
+  {n:"Leg Extension (Machine)",grp:["quads"],why:"Quad isolation — no load on the back, easy to push close to failure",sets:3,reps:"12",w:80,rep:12,rest:60,note:""},
+  /* hamstrings */
+  {n:"Seated Leg Curl",grp:["hams"],why:"Seated machine curl — strong stretch position for the hamstrings",sets:3,reps:"12",w:60,rep:12,rest:60,note:"Slow negative"},
+  {n:"Lying Leg Curl",grp:["hams"],why:"Face-down curl — same muscles from a different hip angle",sets:3,reps:"12",w:40,rep:12,rest:60,note:""},
+  {n:"Romanian Deadlift",grp:["hams","posterior"],why:"Free-weight hip hinge — hamstrings loaded in the stretch plus glutes and back",sets:3,reps:"8-10",w:50,rep:8,rest:90,note:"Soft knees, flat back"},
+  /* lower back / glutes */
+  {n:"Back Extension",grp:["posterior"],why:"Bodyweight hinge on the 45° bench — lower back, glutes and hamstrings",sets:3,reps:"12",w:0,rep:12,rest:60,note:"Hold a plate if it gets easy"},
+  {n:"Hip Thrust",grp:["posterior"],why:"Glute-dominant — heavy hip drive without loading the spine",sets:3,reps:"10-12",w:40,rep:10,rest:90,note:"Chin tucked, full lockout"},
+  /* calves */
+  {n:"Standing Calf Raise (Barbell)",grp:["calves"],why:"Straight-knee raise — hits the big visible calf muscle (gastrocnemius)",sets:4,reps:"15",w:65,rep:15,rest:60,note:""},
+  {n:"Calf Press (Machine)",grp:["calves"],why:"On the leg press — easy heavy loading, no balance component",sets:3,reps:"15",w:140,rep:15,rest:60,note:""},
+  {n:"Seated Calf Raise",grp:["calves"],why:"Bent knees target the deeper soleus muscle instead",sets:3,reps:"15-20",w:40,rep:15,rest:60,note:""},
+  /* shoulder press */
+  {n:"Shoulder Press (Dumbbell)",grp:["shoulders"],why:"Free-weight overhead press — stabilizers work with the delts",sets:4,reps:"10",w:22,rep:10,rest:90,note:""},
+  {n:"Arnold Press",grp:["shoulders"],why:"Rotating press — longer range that also catches the side delts",sets:3,reps:"10",w:16,rep:10,rest:90,note:""},
+  {n:"Machine Shoulder Press",grp:["shoulders"],why:"Guided press — shoulder-friendly and easy to load or drop-set",sets:3,reps:"10-12",w:35,rep:10,rest:90,note:""},
+  /* side delts */
+  {n:"Lateral Raise (Dumbbell)",grp:["sidedelts"],why:"The classic side-delt isolation with free weights",sets:2,reps:"12",w:9,rep:12,rest:60,note:""},
+  {n:"Cable Lateral Raise",grp:["sidedelts"],why:"Cable keeps tension at the bottom, where dumbbells go slack",sets:3,reps:"12-15",w:5,rep:12,rest:60,note:"per side"},
+  /* rear delts */
+  {n:"Reverse Fly (Machine)",grp:["reardelts"],why:"Strict machine path for the rear delts — light and clean",sets:3,reps:"15",w:30,rep:15,rest:60,note:"Shoulder health — light and clean"},
+  {n:"Face Pull",grp:["reardelts"],why:"Rope pull to the face — rear delts plus the rotator cuff",sets:3,reps:"15",w:20,rep:15,rest:60,note:"Pull the rope apart at the end"},
+  /* biceps */
+  {n:"Bicep Curl (Dumbbell)",grp:["biceps"],why:"The classic supinated curl — full biceps, free weights",sets:3,reps:"12",w:10,rep:12,rest:60,note:""},
+  {n:"Hammer Curl",grp:["biceps"],why:"Neutral grip shifts work to the brachialis and forearms",sets:3,reps:"12",w:12,rep:12,rest:60,note:""},
+  {n:"Cable Curl",grp:["biceps"],why:"Constant cable tension through the whole curl — no dead spots",sets:3,reps:"12",w:20,rep:12,rest:60,note:""},
+  /* triceps */
+  {n:"Triceps Pushdown",grp:["triceps"],why:"Cable pushdown — elbows pinned, constant tension, joint-friendly",sets:3,reps:"12",w:25,rep:12,rest:60,note:"Elbows tucked to your sides"},
+  {n:"Triceps Extension (Dumbbell)",grp:["triceps"],why:"Overhead position loads the long head in a full stretch",sets:3,reps:"12",w:24,rep:12,rest:60,note:""},
+  {n:"Skull Crusher",grp:["triceps"],why:"Lying extension — heavy triceps work through a big range",sets:3,reps:"10-12",w:20,rep:10,rest:90,note:""},
+  {n:"Bench Dips",grp:["triceps"],why:"Bodyweight option — triceps with some chest and shoulders",sets:3,reps:"12-15",w:0,rep:12,rest:60,note:"Feet forward = harder"},
+  /* abs */
+  {n:"Hanging Leg Raise",grp:["abs"],why:"Hanging version — abs plus grip and shoulder control",sets:3,reps:"12",w:0,rep:12,rest:60,note:""},
+  {n:"Captain's Chair Leg Raise",grp:["abs"],why:"Supported on forearms — same crunch pattern with zero shoulder strain",sets:3,reps:"12",w:0,rep:12,rest:60,note:"No hanging — protects the shoulder"},
+  {n:"Cable Crunch",grp:["abs"],why:"Weighted crunch — the abs get progressive overload like any muscle",sets:3,reps:"12-15",w:30,rep:12,rest:60,note:"Kneeling, curl the spine"},
+  {n:"Plank",grp:["abs"],why:"Isometric hold — trains the abs to resist movement instead of creating it",sets:3,reps:"30-60s",w:0,rep:45,rest:60,note:"seconds per set"},
+];
+/* guides for the swap-in exercises so their i button works too */
+Object.assign(EXERCISE_INFO,{
+  "cable fly":{m:"Chest",g:"Cable-Crossover.gif",
+    d:"Stand between the cable towers, handles at shoulder height, slight bend in the elbows.\nBring your hands together in a wide hug until they meet in front of your chest, squeeze, then open slowly to a stretch.\nThe arms stay almost straight — the chest does the work, not the triceps."},
+  "push up":{m:"Chest · front delts · triceps · core",g:"Push-Up.gif",
+    d:"Hands slightly wider than your shoulders, body in one straight line.\nLower your chest to just above the floor, elbows about 45° from your body, then press back up.\nToo easy? Elevate your feet or slow the negative."},
+  "barbell row":{m:"Lats · mid-back · lower back · biceps",g:"Barbell-Bent-Over-Row.gif",
+    d:"Hinge forward to about 45° with a flat back, bar hanging at arm's length.\nPull the bar to your lower ribs, driving the elbows back, then lower under control.\nNo jerking with the hips — if you have to swing it, it's too heavy."},
+  "lat pulldown":{m:"Lats · upper back · biceps",g:"Lat-Pulldown.gif",
+    d:"Sit with your thighs locked under the pads, grip slightly wider than shoulders.\nPull the bar to your upper chest while leaning back just a little, then let it rise to a full stretch.\nDrive the elbows down — don't pull with the wrists."},
+  "goblet squat":{m:"Quads · glutes · core",g:"Goblet-Squat.gif",
+    d:"Hold one dumbbell vertically against your chest with both hands.\nSquat down between your knees keeping the torso tall, elbows inside the knees at the bottom.\nDrive up through mid-foot. The front load keeps your form honest."},
+  "walking lunge":{m:"Quads · glutes · balance",g:"Dumbbell-Lunge.gif",
+    d:"Dumbbells at your sides, take a long step forward and lower until both knees are near 90°.\nPush off the front heel straight into the next step.\nKeep the torso upright and the steps controlled — no wobbling."},
+  "lying leg curl":{m:"Hamstrings",g:"Leg-Curl.gif",
+    d:"Lie face down with the pad on the back of your ankles.\nCurl your heels toward your glutes, pause at the top, then lower slowly.\nKeep your hips pressed into the bench the whole set."},
+  "romanian deadlift":{m:"Hamstrings · glutes · lower back",g:"Barbell-Romanian-Deadlift.gif",
+    d:"Hold the bar at your hips, knees slightly bent and fixed.\nPush your hips back and lower the bar down your thighs until you feel a strong hamstring stretch, back flat.\nDrive the hips forward to stand — it's a hinge, not a squat."},
+  "hip thrust":{m:"Glutes · hamstrings",g:"Barbell-Hip-Thrust.gif",
+    d:"Upper back on a bench, bar (padded) over your hips, feet flat.\nDrive through your heels until your body is a straight line from knees to shoulders, chin tucked.\nSqueeze the glutes hard at the top, then lower with control."},
+  "seated calf raise":{m:"Calves (soleus)",g:"Seated-Calf-Raise.gif",
+    d:"Sit with the pad on your knees, balls of your feet on the platform.\nRise onto your toes, pause, then lower into a deep stretch.\nThe bent knees make the deeper soleus muscle do the work."},
+  "arnold press":{m:"Shoulders (all heads) · triceps",g:"Arnold-Press.gif",
+    d:"Start with the dumbbells in front of your shoulders, palms facing you.\nPress overhead while rotating your palms to face forward, then reverse the rotation on the way down.\nSmooth and controlled — the rotation is the point, not extra weight."},
+  "machine shoulder press":{m:"Shoulders · triceps",g:"Lever-Shoulder-Press.gif",
+    d:"Adjust the seat so the handles start at about ear height.\nPress up until your arms are extended without shrugging, then lower with control.\nThe fixed path lets you focus purely on the delts."},
+  "cable lateral raise":{m:"Side delts",g:"Cable-Lateral-Raise.gif",
+    d:"Stand side-on to a low pulley, handle in the far hand.\nRaise your arm out to the side up to shoulder height, slight elbow bend.\nThe cable keeps tension even at the bottom — go lighter than with dumbbells."},
+  "face pull":{m:"Rear delts · rotator cuff · upper back",g:"Face-Pull.gif",
+    d:"Set a rope at upper-chest height and grab it thumbs-back.\nPull toward your face while spreading the rope apart, elbows high, until your hands reach your ears.\nLight weight, strict reps — this is shoulder-health work."},
+  "hammer curl":{m:"Biceps · brachialis · forearms",g:"Hammer-Curl.gif",
+    d:"Hold the dumbbells with a neutral grip, palms facing each other.\nCurl up without rotating the wrists, squeeze, then lower slowly.\nThe neutral grip hits the brachialis and forearms harder than a normal curl."},
+  "cable curl":{m:"Biceps · forearms",g:"Cable-Curl.gif",
+    d:"Stand facing a low pulley with a straight or EZ bar.\nCurl to shoulder height keeping the upper arms still, then lower all the way down.\nThe cable never lets the tension drop — strict form, no swinging."},
+  "skull crusher":{m:"Triceps",g:"Skull-Crusher.gif",
+    d:"Lie on a bench holding the bar or dumbbells over your chest.\nBend only the elbows to lower the weight to just above your forehead, then extend back up.\nKeep the upper arms vertical and still the whole set."},
+  "bench dips":{m:"Triceps · chest · front delts",g:"Bench-Dips.gif",
+    d:"Hands on the edge of a bench behind you, legs extended forward.\nLower your hips by bending the elbows to about 90°, then press back up.\nKeep the elbows pointing straight back and stay close to the bench."},
+  "cable crunch":{m:"Abs",g:"Cable-Crunch.gif",
+    d:"Kneel below a high pulley holding the rope beside your head.\nCrunch down by curling your spine — bring your elbows toward your knees — then uncurl slowly.\nThe hips stay still; it's the abs folding you, not the arms pulling."},
+  "plank":{m:"Abs · core · shoulders",g:"Plank.gif",
+    d:"Forearms on the floor, body in one straight line from head to heels.\nBrace your abs and glutes and hold — don't let the hips sag or pike.\nWhen a set passes a minute easily, add weight on your back instead of time."},
+});
+/* plan-name variants → their catalog entry (exact, no fuzzy guessing) */
+const ALT_ALIAS={
+  "pull up (weighted)":"pull up",
+  "db bicep curl":"bicep curl (dumbbell)",
+  "seated leg curl (machine)":"seated leg curl",
+  "leg press (machine)":"leg press (plate-loaded)",
+  "bulgarian split squat (dumbbell)":"bulgarian split squat",
+};
+function altFor(name){
+  const n=ALT_ALIAS[norm(name)]||norm(name);
+  return ALT_LIST.find(a=>norm(a.n)===n)||null;
+}
+let swapIdx=null;
+function showSwap(xi){
+  const ex=exAt(xi); if(!ex) return;
+  swapIdx=xi;
+  const cur=altFor(ex.n);
+  $("swapTitle").textContent="Swap "+ex.n;
+  const alts=cur?ALT_LIST.filter(a=>a!==cur&&a.grp.some(g=>cur.grp.includes(g))):[];
+  $("swapList").innerHTML=alts.length?alts.map(a=>`
+    <div class="altrow">
+      <div class="alt-head"><b>${esc(a.n)}</b><button class="ib" onclick="showInfo('${jsq(a.n)}')" title="How to do this exercise">i</button></div>
+      <div class="alt-why">${esc(a.why)}</div>
+      <button class="sbtn" onclick="doSwap('${jsq(a.n)}')">Use instead</button>
+    </div>`).join("")
+    :'<p class="hint" style="padding:10px 0">No suggestions for this exercise yet — it isn\'t mapped to a muscle group. You can still edit it in Manage → Workout Plans.</p>';
+  $("swapBg").classList.add("show");
+}
+function closeSwap(ev){
+  if(ev&&ev.target!==$("swapBg")) return; /* backdrop click only */
+  $("swapBg").classList.remove("show");
+}
+function doSwap(name){
+  const alt=ALT_LIST.find(a=>norm(a.n)===norm(name));
+  if(!alt||swapIdx===null) return;
+  const ex=exAt(swapIdx); if(!ex) return;
+  const st=session.state[stateKey(currentRoutine,swapIdx)];
+  if(st&&st.sets.some(s=>s.done)&&!confirm("You already checked sets on "+ex.n+" — swapping clears them for this slot. Continue?")) return;
+  delete session.state[stateKey(currentRoutine,swapIdx)];
+  plans[activePlan].routines[currentRoutine].ex[swapIdx]={n:alt.n,sets:alt.sets,reps:alt.reps,w:alt.w,rep:alt.rep,rest:alt.rest,note:alt.note||""};
+  persistData(); persistDraft();
+  closeSwap(); closeInfo();
+  renderWorkout();
+  toast("Swapped to "+alt.n+" — swap again to go back");
 }
 
 /* ---------- storage adapter: Claude artifact OR standalone ---------- */
@@ -478,7 +644,7 @@ function renderWorkout(){
       </div>`).join("");
     return `<div class="ex">
       <div class="topline">
-        <div class="namewrap"><h2>${esc(ex.n)}</h2><button class="ib" onclick="showInfo('${jsq(ex.n)}')" title="How to do this exercise">i</button></div>
+        <div class="namewrap"><h2>${esc(ex.n)}</h2><button class="ib" onclick="showInfo('${jsq(ex.n)}')" title="How to do this exercise">i</button><button class="ib" style="font-style:normal;font-family:inherit" onclick="showSwap(${xi})" title="Swap for a similar exercise">⇄</button></div>
         <span class="rest-cfg">Rest <input type="number" inputmode="numeric" value="${restFor(ex)}" onchange="setRestCfg(${xi},this.value)"> s</span>
       </div>
       <div class="meta">${ex.sets}×${esc(ex.reps)}</div>

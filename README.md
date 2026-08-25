@@ -38,6 +38,9 @@ self-contained `index.html`, no build step.
 - The app ships with an empty plan — no personal data is embedded in the code or visible to other visitors.
   Each visitor's data is theirs alone; backup/restore is a local JSON file the user downloads/uploads.
 - `gym-backup.json` (the exported data) is gitignored and must never be committed.
+- Each exercise card has a **⇄** button: pick a recommended alternative that works the same muscles
+  with a different angle or equipment. Swapping edits the routine in place (history is kept) and the
+  same button swaps back.
 - Each exercise card has an **i** button: a bottom sheet with an English how-to, the muscles worked,
   and a demo GIF (hotlinked from fitnessprogramer.com, fetched only when the sheet is opened, with
   referrer disabled; if it can't load, the sheet offers video/GIF search links instead).
