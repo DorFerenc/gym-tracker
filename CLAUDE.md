@@ -4,9 +4,9 @@ Personal workout tracker PWA + MCP server. Owner: Dor. Do all steps without aski
 unless a command fails or credentials are missing.
 
 ## Repo layout
-- `index.html`, `manifest.json`, `sw.js`, `icon-*.png` — the PWA (single-file app, Hebrew RTL, localStorage).
+- `index.html`, `manifest.json`, `sw.js`, `icon-*.png` — the PWA (single-file app, English UI, localStorage).
 - `mcp-server/server.py` — MCP server exposing the workout data to AI tools.
-- Data file: `gym-backup.json` at repo root (exported from the app UI: ניהול → גיבוי JSON). Gitignored.
+- Data file: `gym-backup.json` at repo root (exported from the app UI: Manage → Backup JSON). Gitignored.
 
 ## Task 1 — Deploy the app to GitHub Pages
 1. `git init` (if needed), create `.gitignore` containing `gym-backup.json` and `.venv/`.
@@ -33,10 +33,10 @@ unless a command fails or credentials are missing.
 ## Data flow (important)
 Phone PWA (localStorage) and this repo do NOT auto-sync. Current loop:
 app → "גיבוי JSON" → replace `gym-backup.json` here → AI reads/updates via MCP →
-user re-imports the file in the app (ניהול → שחזור JSON).
+user re-imports the file in the app (Manage → Restore JSON).
 A future task may add GitHub Gist sync inside the app to remove the manual step — do not build it unless asked.
 
 ## Conventions
 - App is a single self-contained index.html — keep it that way (no build step, no frameworks).
 - All history entries: {date: "YYYY-MM-DD", plan, routine, duration_min, entries: [{name, sets: [{w, r}]}]}.
-- Hebrew UI strings; code and identifiers in English.
+- English UI strings, code and identifiers.

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#131416">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; manifest-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: https:; manifest-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -48,6 +48,10 @@
     padding:12px 12px 10px; margin-bottom:12px; border-inline-start:3px solid var(--accent);}
   .ex h2{margin:0; font-size:16px;}
   .topline{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .namewrap{display:flex; align-items:center; gap:7px; min-width:0;}
+  .ib{flex:none; width:22px; height:22px; border-radius:50%; border:1px solid var(--line);
+    background:#232529; color:var(--accent); font-size:12px; font-weight:800; cursor:pointer;
+    font-style:italic; font-family:Georgia,serif; line-height:1; padding:0;}
   .rest-cfg{display:flex; align-items:center; gap:4px; color:var(--mute); font-size:12px; flex:none;}
   .rest-cfg input{width:44px; background:#232529; border:1px solid var(--line); border-radius:8px;
     color:var(--ink); font-size:13px; padding:4px 2px; text-align:center;}
@@ -106,24 +110,43 @@
   .edx{border-top:1px solid var(--line); padding:9px 0;}
   .edx .row input{background:#232529; border:1px solid var(--line); border-radius:9px; color:var(--ink);
     font-size:14px; padding:8px 6px; min-width:0;}
-  .edx .nm{flex:2.2;} .edx .sm{flex:.8; text-align:center;} 
+  .edx .nm{flex:2.2;} .edx .sm{flex:.8; text-align:center;}
   .edx .delx{color:var(--danger); background:none; border:none; font-size:16px; cursor:pointer; flex:none; width:30px;}
   .hint{color:var(--mute); font-size:12.5px; margin:6px 0 0;}
   .hidden{display:none;}
+  /* exercise info modal */
+  .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:20;
+    display:none; align-items:flex-end; justify-content:center;}
+  .modal-bg.show{display:flex;}
+  .modal{background:var(--card); border:1px solid var(--line); border-bottom:none;
+    border-radius:18px 18px 0 0; padding:16px 16px 22px; width:100%; max-width:560px;
+    max-height:84vh; overflow-y:auto;}
+  .modal h2{margin:0 0 3px; font-size:18px;}
+  .modal .mus{color:var(--accent); font-size:13px; font-weight:600; margin:0 0 12px;}
+  .modal .gifwrap{margin:0 0 12px;}
+  .modal .gifwrap img{width:100%; max-height:46vh; object-fit:contain; border-radius:12px;
+    background:#fff; display:block;}
+  .modal .desc{color:var(--ink); font-size:14px; line-height:1.55; margin:0 0 14px; white-space:pre-line;}
+  .modal .links{display:flex; gap:8px; margin-bottom:14px;}
+  .modal .links a{flex:1; text-align:center; background:#232529; border:1px solid var(--line);
+    color:var(--ink); border-radius:11px; padding:10px 6px; font-size:13.5px; font-weight:700;
+    text-decoration:none;}
+  .modal .close{width:100%; background:var(--accent); color:var(--accent-ink); border:none;
+    border-radius:12px; padding:12px 0; font-size:15px; font-weight:800; cursor:pointer;}
 </style>
 </head>
 <body>
-<h1>INTEL GYM · <b>מעקב אימונים</b></h1>
+<h1>INTEL GYM · <b>Workout Tracker</b></h1>
 
 <div class="viewtabs">
-  <div class="vtab on" data-v="workout" onclick="setView('workout')">אימון</div>
-  <div class="vtab" data-v="history" onclick="setView('history')">היסטוריה</div>
-  <div class="vtab" data-v="settings" onclick="setView('settings')">ניהול</div>
+  <div class="vtab on" data-v="workout" onclick="setView('workout')">Workout</div>
+  <div class="vtab" data-v="history" onclick="setView('history')">History</div>
+  <div class="vtab" data-v="settings" onclick="setView('settings')">Manage</div>
 </div>
 
 <div id="view-workout">
   <div class="next">
-    <span class="lbl" id="statusLbl">האימון הבא</span>
+    <span class="lbl" id="statusLbl">Next workout</span>
     <span class="val" id="statusVal">A</span>
   </div>
   <div class="planrow"><select id="planSel" onchange="switchPlan(this.value)"></select></div>
@@ -138,52 +161,163 @@
 
 <div id="view-settings" class="hidden">
   <div class="sec">
-    <h3>תוכניות אימון</h3>
+    <h3>Workout Plans</h3>
     <div class="row"><select id="editPlanSel" onchange="renderEditor()"></select></div>
     <div id="editor"></div>
     <div class="row" style="margin-top:10px">
-      <button class="sbtn" onclick="addRoutine()">+ אימון לתוכנית</button>
-      <button class="sbtn" onclick="addPlan()">+ תוכנית חדשה</button>
+      <button class="sbtn" onclick="addRoutine()">+ Routine</button>
+      <button class="sbtn" onclick="addPlan()">+ New Plan</button>
     </div>
   </div>
   <div class="sec">
-    <h3>נתונים</h3>
+    <h3>Data</h3>
     <div class="row">
-      <button class="sbtn" onclick="exportCSV()">ייצוא CSV</button>
-      <button class="sbtn" onclick="exportJSON()">גיבוי JSON</button>
+      <button class="sbtn" onclick="exportCSV()">Export CSV</button>
+      <button class="sbtn" onclick="exportJSON()">Backup JSON</button>
     </div>
     <div class="row">
-      <button class="sbtn" onclick="document.getElementById('hevyFile').click()">ייבוא Hevy CSV</button>
-      <button class="sbtn" onclick="document.getElementById('jsonFile').click()">שחזור JSON</button>
+      <button class="sbtn" onclick="document.getElementById('hevyFile').click()">Import Hevy CSV</button>
+      <button class="sbtn" onclick="document.getElementById('jsonFile').click()">Restore JSON</button>
     </div>
     <input type="file" id="hevyFile" accept=".csv" class="hidden" onchange="importHevy(this.files[0])">
     <input type="file" id="jsonFile" accept=".json" class="hidden" onchange="importJSON(this.files[0])">
-    <p class="hint">גיבוי JSON = כל הדאטה (תוכניות + היסטוריה). זה גם הפורמט שחיבור AI/MCP יקרא ויעדכן.</p>
+    <p class="hint">Backup JSON = all your data (plans + history). It is also the format the AI/MCP integration reads and updates.</p>
   </div>
 </div>
 
 <div class="restbar" id="restbar">
-  <span>מנוחה</span>
+  <span>Rest</span>
   <span class="t" id="restT">1:30</span>
-  <button class="skip" onclick="skipRest()">דלג</button>
+  <button class="skip" onclick="skipRest()">Skip</button>
 </div>
 
 <div class="bar" id="mainBar">
-  <button class="btn save" onclick="saveWorkout()">סיים ושמור אימון</button>
+  <button class="btn save" onclick="saveWorkout()">Finish &amp; Save Workout</button>
   <button class="btn csv" onclick="exportCSV()">CSV</button>
 </div>
 <div class="toast" id="toast"></div>
+
+<div class="modal-bg" id="infoBg" onclick="closeInfo(event)">
+  <div class="modal">
+    <h2 id="infoTitle"></h2>
+    <div class="mus" id="infoMus"></div>
+    <div class="gifwrap" id="infoGif"></div>
+    <p class="desc" id="infoDesc"></p>
+    <div class="links" id="infoLinks"></div>
+    <button class="close" onclick="closeInfo()">Close</button>
+  </div>
+</div>
 
 <script>
 /* ---------- default data ----------
    Intentionally empty: no personal data ships with the app.
    Each user's plans + history live only in their own browser storage;
-   existing data comes in via ניהול → שחזור JSON. */
+   existing data comes in via Manage → Restore JSON. */
 const DEFAULT_PLANS = {
-  "1": { name: "התוכנית שלי", routines: {
+  "1": { name: "My Plan", routines: {
     A: { name: "", ex: [] },
   }},
 };
+
+/* ---------- exercise guide (English how-to + demo GIF) ----------
+   GIFs are hotlinked from fitnessprogramer.com and load only when the
+   info sheet is opened; if a GIF fails (offline / moved), the sheet
+   falls back to the demo-search links. Keyed by normalized name. */
+const GIF_BASE="https://fitnessprogramer.com/wp-content/uploads/2021/02/";
+const EXERCISE_INFO={
+  "bench press (dumbbell)":{m:"Chest · front delts · triceps",g:"Dumbbell-Press.gif",
+    d:"Lie on a flat bench with a dumbbell in each hand at chest level.\nPress the dumbbells up until your arms are extended, then lower them slowly back to the sides of your chest.\nKeep your feet planted and your shoulder blades pinched back against the bench."},
+  "incline db press":{m:"Upper chest · front delts · triceps",g:"Incline-Dumbbell-Press.gif",
+    d:"Set the bench to a 30–45° incline and hold the dumbbells at shoulder level with a neutral-ish grip.\nPress up and slightly back until your arms are extended, then lower under control.\nStop the descent where your shoulders stay pain-free."},
+  "dumbbell row":{m:"Lats · mid-back · biceps",g:"Dumbbell-Row.gif",
+    d:"Support one hand and knee on a bench, back flat, dumbbell hanging in the other hand.\nPull the dumbbell to your hip, driving the elbow back — not out.\nLower slowly until your arm is fully stretched. Avoid twisting the torso."},
+  "squat (barbell)":{m:"Quads · glutes · core",g:"BARBELL-SQUAT.gif",
+    d:"Bar on your upper back, feet shoulder-width, toes slightly out.\nBrace your core and sit down between your hips until your thighs reach at least parallel.\nDrive up through mid-foot, knees tracking over the toes the whole way."},
+  "pull up":{m:"Lats · upper back · biceps",g:"Pull-up.gif",
+    d:"Hang from the bar with an overhand grip slightly wider than your shoulders.\nPull your chest toward the bar by driving the elbows down, then lower to a full hang under control.\nIf your shoulder complains, switch to Lat Pulldown."},
+  "pull up (weighted)":{m:"Lats · upper back · biceps",g:"Pull-up.gif",
+    d:"Same movement as a strict pull up, with extra weight on a dip belt (or a dumbbell between your feet).\nFull hang at the bottom, chest to the bar at the top, no swinging.\nAdd weight only when clean bodyweight reps are easy."},
+  "hanging leg raise":{m:"Abs · hip flexors · grip",g:"Hanging-Leg-Raises.gif",
+    d:"Hang from a bar with straight arms.\nRaise your legs (bent knees is fine to start) by curling the pelvis up — don't just swing the legs.\nLower slowly to a dead hang between reps."},
+  "captain's chair leg raise":{m:"Abs · hip flexors",g:"Captains-Chair-Leg-Raise.gif",
+    d:"Support yourself on your forearms in the captain's chair, back against the pad.\nRaise your knees toward your chest by curling the pelvis up, then lower slowly.\nNo hanging involved, so it is easy on the shoulders. No station? Lying bench leg raises 3×15."},
+  "standing calf raise (barbell)":{m:"Calves",g:"Standing-Calf-Raise.gif",
+    d:"Stand with the bar on your back, balls of your feet on a small block.\nRise as high as you can onto your toes, pause a second, then lower until you feel a full stretch.\nKeep your knees straight but not locked."},
+  "calf press (machine)":{m:"Calves",g:"Leg-Press-Calf-Raise.gif",
+    d:"On the leg-press machine, place the balls of your feet on the bottom edge of the platform.\nPush through your toes to full extension, pause, then let your heels come back for a deep stretch.\nKeep the movement slow — no bouncing."},
+  "bulgarian split squat":{m:"Quads · glutes · balance",g:"Dumbbell-Bulgarian-Split-Squat.gif",
+    d:"Stand a stride ahead of a bench and rest your back foot on it, dumbbells at your sides.\nLower straight down until your front thigh is about parallel, then drive up through the front heel.\nKeep your torso tall; do all reps on one leg, then switch."},
+  "bulgarian split squat (dumbbell)":{m:"Quads · glutes · balance",g:"Dumbbell-Bulgarian-Split-Squat.gif",
+    d:"Stand a stride ahead of a bench and rest your back foot on it, dumbbells at your sides.\nLower straight down until your front thigh is about parallel, then drive up through the front heel.\nKeep your torso tall; do all reps on one leg, then switch."},
+  "shoulder press (dumbbell)":{m:"Shoulders · triceps",g:"Dumbbell-Shoulder-Press.gif",
+    d:"Seated or standing, hold the dumbbells at shoulder height, palms forward or neutral.\nPress overhead until your arms are extended without shrugging, then lower to ear level.\nKeep your ribs down and core braced — don't arch the lower back."},
+  "lateral raise (dumbbell)":{m:"Side delts",g:"Dumbbell-Lateral-Raise.gif",
+    d:"Stand with dumbbells at your sides, slight bend in the elbows.\nRaise your arms out to the sides up to shoulder height, leading with the elbows.\nLower slowly — lighter and cleaner beats heavier and swingy."},
+  "bicep curl (dumbbell)":{m:"Biceps · forearms",g:"Dumbbell-Curl.gif",
+    d:"Stand tall, dumbbells at your sides, palms forward.\nCurl the weight up without moving your upper arms, squeeze at the top, then lower slowly.\nNo swinging from the hips."},
+  "db bicep curl":{m:"Biceps · forearms",g:"Dumbbell-Curl.gif",
+    d:"Stand tall, dumbbells at your sides, palms forward.\nCurl the weight up without moving your upper arms, squeeze at the top, then lower slowly.\nNo swinging from the hips."},
+  "triceps extension (dumbbell)":{m:"Triceps",g:"Dumbbell-Triceps-Extension.gif",
+    d:"Hold one dumbbell overhead with both hands, elbows pointing forward.\nLower the weight behind your head by bending the elbows, then extend back up.\nKeep the upper arms still — only the forearms move."},
+  "triceps pushdown":{m:"Triceps",g:"Pushdown.gif",
+    d:"Stand at a cable stack with the bar or rope at chest height, elbows tucked to your sides.\nPush the handle down until your arms are fully extended, squeeze, then let it rise to elbow height.\nElbows stay glued to your ribs the whole set."},
+  "seated leg curl":{m:"Hamstrings",g:"Seated-Leg-Curl.gif",
+    d:"Sit with the pad on the back of your ankles, thighs secured.\nCurl your heels under the seat as far as they go, pause, then release slowly.\nThe slow negative is where the hamstrings do their work."},
+  "seated leg curl (machine)":{m:"Hamstrings",g:"Seated-Leg-Curl.gif",
+    d:"Sit with the pad on the back of your ankles, thighs secured.\nCurl your heels under the seat as far as they go, pause, then release slowly.\nThe slow negative is where the hamstrings do their work."},
+  "leg extension (machine)":{m:"Quads",g:"LEG-EXTENSION.gif",
+    d:"Sit with the pad on your shins, knees lined up with the machine's pivot.\nExtend your legs until your knees are straight, squeeze the quads, then lower under control.\nDon't let the stack slam between reps."},
+  "leg press (machine)":{m:"Quads · glutes · hamstrings",g:"Leg-Press.gif",
+    d:"Feet shoulder-width on the platform, lower back pressed into the pad.\nLower the sled until your knees are near your chest without your hips curling off the seat.\nPress back up through the whole foot without locking the knees hard."},
+  "leg press (plate-loaded)":{m:"Quads · glutes · hamstrings",g:"Leg-Press.gif",
+    d:"Feet shoulder-width on the platform, lower back pressed into the pad.\nLower the sled through a full range — knees toward your chest, hips staying on the seat.\nPress back up through the whole foot without locking the knees hard."},
+  "v-squat (hammer)":{m:"Quads · glutes",g:"Hack-Squat.gif",
+    d:"Stand in the V-squat / hack machine with your back and hips flat against the pad.\nUnlock and squat down until your thighs reach about parallel, knees tracking over the toes.\nDrive up through mid-foot. Weight = plates loaded. Smith-machine squat is the backup option."},
+  "iso row (plate-loaded)":{m:"Lats · mid-back · biceps",g:"Lever-Seated-Row.gif",
+    d:"Sit with your chest against the pad and grab the handles.\nPull toward your hips, driving the elbows back and squeezing the shoulder blades together.\nRelease slowly to a full stretch. Weight = plates per side."},
+  "seated cable row":{m:"Mid-back · lats · biceps",g:"Seated-Cable-Row.gif",
+    d:"Sit tall, feet braced, and grab the handle with arms extended.\nPull to your stomach with shoulders down and back, chest proud.\nLet the weight stretch you forward slowly between reps — no slouching."},
+  "back extension":{m:"Lower back · glutes · hamstrings",g:"Hyperextension.gif",
+    d:"Set the pad at your hips on the 45° bench, ankles locked in.\nLower your torso with a straight back, then raise up until your body forms a straight line — no hyperextending.\nHold a plate to your chest once bodyweight is easy."},
+  "reverse fly (machine)":{m:"Rear delts · upper back",g:"Machine-Reverse-Fly.gif",
+    d:"Sit facing the machine's pad, arms forward on the handles.\nSweep your arms out and back in a wide arc until they are in line with your shoulders.\nLight weight, strict form — this one is for shoulder health."},
+  "chest press (machine)":{m:"Chest · front delts · triceps",g:"Lever-Chest-Press.gif",
+    d:"Adjust the seat so the handles sit at mid-chest level.\nPress forward until your arms are extended, then return until you feel a comfortable stretch.\nIf it bothers your shoulder, switch to the alternate (yellow) machine."},
+};
+function findInfo(name){
+  const n=norm(name);
+  if(EXERCISE_INFO[n]) return EXERCISE_INFO[n];
+  const stripped=n.replace(/\(.*?\)/g," ").replace(/\s+/g," ").trim();
+  if(EXERCISE_INFO[stripped]) return EXERCISE_INFO[stripped];
+  for(const k in EXERCISE_INFO){
+    const ks=k.replace(/\(.*?\)/g," ").replace(/\s+/g," ").trim();
+    if(ks===stripped||ks.includes(stripped)||stripped.includes(ks)) return EXERCISE_INFO[k];
+  }
+  return null;
+}
+function showInfo(name){
+  const info=findInfo(name);
+  $("infoTitle").textContent=name;
+  $("infoMus").textContent=info?info.m:"";
+  $("infoDesc").textContent=info?info.d:"No guide for this exercise yet — use the demo links below.";
+  $("infoLinks").innerHTML=
+    `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(name+" exercise form")}" target="_blank" rel="noopener">▶ Video demos</a>`+
+    `<a href="https://www.google.com/search?udm=2&q=${encodeURIComponent(name+" exercise gif")}" target="_blank" rel="noopener">🔎 More GIFs</a>`;
+  const wrap=$("infoGif"); wrap.innerHTML="";
+  if(info&&info.g){
+    const img=new Image();
+    img.referrerPolicy="no-referrer"; img.alt=name+" demonstration";
+    img.onerror=()=>{ wrap.innerHTML='<p class="hint" style="text-align:center;padding:8px 0">GIF could not load (offline?) — use the demo links below.</p>'; };
+    img.src=info.g.startsWith("http")?info.g:GIF_BASE+info.g;
+    wrap.appendChild(img);
+  }
+  $("infoBg").classList.add("show");
+}
+function closeInfo(ev){
+  if(ev&&ev.target!==$("infoBg")) return; /* backdrop click only */
+  $("infoBg").classList.remove("show");
+  $("infoGif").innerHTML=""; /* stop the gif when closed */
+}
 
 /* ---------- storage adapter: Claude artifact OR standalone ---------- */
 const IS_CLAUDE = typeof window.storage !== "undefined";
@@ -240,7 +374,7 @@ async function init(){
   history.forEach(h=>{ if(!h.plan) h.plan=legacyPlan; });
   const d=await store.get(DRAFT);
   if(d && d.start && plans[d.plan] && plans[d.plan].routines[d.routine]){
-    session=d; activePlan=d.plan; currentRoutine=d.routine; toast("אימון פתוח שוחזר");
+    session=d; activePlan=d.plan; currentRoutine=d.routine; toast("Open workout restored");
   }
   else{
     if(d) store.del(DRAFT); /* draft references a plan/routine that no longer exists */
@@ -294,7 +428,7 @@ function renderPlanSelects(){
   $("editPlanSel").value=plans[cur]?cur:activePlan;
 }
 function switchPlan(p){
-  if(session.start){ $("planSel").value=activePlan; toast("סיים או שמור את האימון הפתוח קודם", true); return; }
+  if(session.start){ $("planSel").value=activePlan; toast("Finish or save the open workout first", true); return; }
   activePlan=p; session={plan:null,routine:null,start:null,state:{}};
   currentRoutine=nextRoutine(); persistData(); renderWorkout(); updateStatus();
 }
@@ -320,7 +454,7 @@ function renderWorkout(){
   const rKeys=routineKeys(activePlan);
   if(!rKeys.length){
     $("tabs").innerHTML="";
-    $("exercises").innerHTML='<p class="hint" style="text-align:center;padding:18px 8px">אין אימונים בתוכנית הזו — הוסף אחד ב<b>ניהול → תוכניות אימון</b>.</p>';
+    $("exercises").innerHTML='<p class="hint" style="text-align:center;padding:18px 8px">This plan has no routines yet — add one in <b>Manage → Workout Plans</b>.</p>';
     $("count").textContent="";
     return;
   }
@@ -332,29 +466,29 @@ function renderWorkout(){
     const st=getState(currentRoutine,xi,ex);
     const prev=lastEntry(ex.n);
     const prevTxt=prev
-      ? "פעם קודמת ("+prev.date.slice(5).replace("-",".")+"): "+prev.sets.map(s=>(s.w||"BW")+"×"+s.r).join(", ")
-      : "אימון ראשון — משקל מוצע: "+(ex.w||"משקל גוף");
+      ? "Last time ("+prev.date.slice(5).replace("-",".")+"): "+prev.sets.map(s=>(s.w||"BW")+"×"+s.r).join(", ")
+      : "First workout — suggested weight: "+(ex.w||"bodyweight");
     const rows=st.sets.map((s,i)=>`
       <div class="set ${s.done?"done":""}" id="row-${xi}-${i}">
         <span class="n">${i+1}</span>
-        <input type="number" inputmode="decimal" step="0.5" placeholder="משקל" value="${s.w}" oninput="upd(${xi},${i},'w',this.value)">
-        <span class="u">ק"ג</span>
-        <input type="number" inputmode="numeric" placeholder="חזרות" value="${s.r}" oninput="upd(${xi},${i},'r',this.value)">
+        <input type="number" inputmode="decimal" step="0.5" placeholder="weight" value="${s.w}" oninput="upd(${xi},${i},'w',this.value)">
+        <span class="u">kg</span>
+        <input type="number" inputmode="numeric" placeholder="reps" value="${s.r}" oninput="upd(${xi},${i},'r',this.value)">
         <button class="chk" onclick="toggleDone(${xi},${i})">✓</button>
       </div>`).join("");
     return `<div class="ex">
       <div class="topline">
-        <h2>${esc(ex.n)}</h2>
-        <span class="rest-cfg">מנוחה <input type="number" inputmode="numeric" value="${restFor(ex)}" onchange="setRestCfg(${xi},this.value)"> שנ'</span>
+        <div class="namewrap"><h2>${esc(ex.n)}</h2><button class="ib" onclick="showInfo('${jsq(ex.n)}')" title="How to do this exercise">i</button></div>
+        <span class="rest-cfg">Rest <input type="number" inputmode="numeric" value="${restFor(ex)}" onchange="setRestCfg(${xi},this.value)"> s</span>
       </div>
       <div class="meta">${ex.sets}×${esc(ex.reps)}</div>
       ${ex.note?`<div class="note">${esc(ex.note)}</div>`:""}
       <div class="prev">${prevTxt}</div>
       <div class="sets">${rows}</div>
-      <button class="addset" onclick="addSet(${xi})">+ סט</button>
+      <button class="addset" onclick="addSet(${xi})">+ Set</button>
     </div>`;
-  }).join("")||'<p class="hint" style="text-align:center;padding:18px 8px">אין תרגילים באימון הזה עדיין.<br>הוסף אותם ב<b>ניהול → תוכניות אימון</b>, או שחזר גיבוי JSON קיים.</p>';
-  $("count").textContent=history.length?history.length+" אימונים שמורים":"";
+  }).join("")||'<p class="hint" style="text-align:center;padding:18px 8px">No exercises in this routine yet.<br>Add them in <b>Manage → Workout Plans</b>, or restore an existing JSON backup.</p>';
+  $("count").textContent=history.length?history.length+" workouts saved":"";
 }
 function switchTab(r){ currentRoutine=r; renderWorkout(); window.scrollTo(0,0); }
 function exAt(xi){ return plans[activePlan].routines[currentRoutine].ex[xi]; }
@@ -397,8 +531,8 @@ function beep(){
 }
 function fmt(ms){ const s=Math.max(0,Math.ceil(ms/1000)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
 function updateStatus(){
-  if(session.start){ $("statusLbl").textContent="אימון "+(session.routine||currentRoutine)+" פעיל"; }
-  else{ $("statusLbl").textContent="האימון הבא"; $("statusVal").textContent=nextRoutine(); }
+  if(session.start){ $("statusLbl").textContent="Workout "+(session.routine||currentRoutine)+" in progress"; }
+  else{ $("statusLbl").textContent="Next workout"; $("statusVal").textContent=nextRoutine(); }
 }
 function tick(){
   if(session.start) $("statusVal").textContent=fmt(Date.now()-session.start);
@@ -420,24 +554,24 @@ async function saveWorkout(){
     const sets=st.sets.filter(s=>s.done&&s.r!=="").map(s=>({w:s.w,r:s.r}));
     if(sets.length) entries.push({name:ex.n, sets});
   });
-  if(!entries.length){ toast("סמן ✓ לפחות על סט אחד", true); return; }
+  if(!entries.length){ toast("Check off ✓ at least one set", true); return; }
   const d=new Date();
   const date=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   const dur=session.start?Math.max(1,Math.round((Date.now()-session.start)/60000)):"";
   history.push({date, plan:activePlan, routine:currentRoutine, duration_min:dur, entries});
   const ok=await store.set(LOG,history);
-  if(!ok){ history.pop(); toast("השמירה נכשלה — האימון לא אבד, נסה שוב", true); return; }
+  if(!ok){ history.pop(); toast("Save failed — the workout is still here, try again", true); return; }
   await store.del(DRAFT);
   session={plan:null,routine:null,start:null,state:{}};
   skipRest();
-  toast("נשמר"+(dur?" · "+dur+" דקות":""));
+  toast("Saved"+(dur?" · "+dur+" min":""));
   currentRoutine=nextRoutine();
   renderWorkout(); updateStatus();
 }
 
 /* ---------- history view ---------- */
 function renderHistory(){
-  if(!history.length){ $("histList").innerHTML='<p class="hint">אין עדיין אימונים.</p>'; return; }
+  if(!history.length){ $("histList").innerHTML='<p class="hint">No workouts yet.</p>'; return; }
   $("histList").innerHTML=history.slice().reverse().map((h,ri)=>{
     const idx=history.length-1-ri;
     const planName=plans[h.plan]?plans[h.plan].name:(h.plan==="hevy"?"Hevy import":h.plan);
@@ -446,19 +580,19 @@ function renderHistory(){
     return `<details class="hist">
       <summary>
         <span class="hd">${h.date} · ${esc(h.routine)}</span>
-        <span class="hm">${esc(planName)}${h.duration_min?" · "+h.duration_min+" דק'":""} · ${nSets} סטים</span>
+        <span class="hm">${esc(planName)}${h.duration_min?" · "+h.duration_min+" min":""} · ${nSets} sets</span>
       </summary>
       <div class="body">${body}
-        <button class="del" onclick="delWorkout(${idx})">מחק אימון</button>
+        <button class="del" onclick="delWorkout(${idx})">Delete workout</button>
       </div>
     </details>`;
   }).join("");
 }
 async function delWorkout(idx){
-  if(!confirm("למחוק את האימון הזה?")) return;
+  if(!confirm("Delete this workout?")) return;
   history.splice(idx,1);
   await store.set(LOG,history);
-  renderHistory(); toast("נמחק");
+  renderHistory(); toast("Deleted");
 }
 
 /* ---------- editor ---------- */
@@ -468,7 +602,7 @@ function renderEditor(){
   let html=`<div class="row"><input class="nm" style="flex:1;background:#232529;border:1px solid var(--line);border-radius:9px;color:var(--ink);padding:8px" value="${esc(plan.name)}" onchange="plans['${jsq(p)}'].name=this.value;persistData();renderPlanSelects()"></div>`;
   routineKeys(p).forEach(r=>{
     const rt=plan.routines[r];
-    html+=`<h3 style="margin:12px 0 4px;display:flex;align-items:center">${esc(r)} · <input style="background:none;border:none;color:var(--accent);font-size:15px;font-weight:700;width:100px;flex:1" value="${esc(rt.name||"")}" onchange="plans['${jsq(p)}'].routines['${jsq(r)}'].name=this.value;persistData()"><button class="delx" onclick="delRoutine('${jsq(p)}','${jsq(r)}')" title="מחק אימון">✕</button></h3>`;
+    html+=`<h3 style="margin:12px 0 4px;display:flex;align-items:center">${esc(r)} · <input style="background:none;border:none;color:var(--accent);font-size:15px;font-weight:700;width:100px;flex:1" value="${esc(rt.name||"")}" onchange="plans['${jsq(p)}'].routines['${jsq(r)}'].name=this.value;persistData()"><button class="delx" onclick="delRoutine('${jsq(p)}','${jsq(r)}')" title="Delete routine">✕</button></h3>`;
     rt.ex.forEach((ex,i)=>{
       html+=`<div class="edx">
         <div class="row">
@@ -476,24 +610,24 @@ function renderEditor(){
           <button class="delx" onclick="delEx('${jsq(p)}','${jsq(r)}',${i})">✕</button>
         </div>
         <div class="row">
-          <input class="sm" type="number" value="${ex.sets}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'sets',parseInt(this.value)||3)" title="סטים">
-          <input class="sm" value="${esc(ex.reps)}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'reps',this.value)" title="חזרות">
-          <input class="sm" type="number" step="0.5" value="${ex.w}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'w',parseFloat(this.value)||0)" title="משקל">
-          <input class="sm" type="number" value="${ex.rest}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'rest',parseInt(this.value)||60)" title="מנוחה">
+          <input class="sm" type="number" value="${ex.sets}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'sets',parseInt(this.value)||3)" title="Sets">
+          <input class="sm" value="${esc(ex.reps)}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'reps',this.value)" title="Reps">
+          <input class="sm" type="number" step="0.5" value="${ex.w}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'w',parseFloat(this.value)||0)" title="Weight">
+          <input class="sm" type="number" value="${ex.rest}" onchange="edEx('${jsq(p)}','${jsq(r)}',${i},'rest',parseInt(this.value)||60)" title="Rest">
         </div>
       </div>`;
     });
-    html+=`<button class="sbtn" style="margin-top:6px" onclick="addEx('${jsq(p)}','${jsq(r)}')">+ תרגיל ל-${esc(r)}</button>`;
+    html+=`<button class="sbtn" style="margin-top:6px" onclick="addEx('${jsq(p)}','${jsq(r)}')">+ Exercise in ${esc(r)}</button>`;
   });
-  html+=`<p class="hint">שדות שורה שנייה: סטים · חזרות · משקל · מנוחה (שנ')</p>`;
+  html+=`<p class="hint">Second-row fields: sets · reps · weight · rest (s)</p>`;
   $("editor").innerHTML=html;
 }
 function edEx(p,r,i,f,v){ plans[p].routines[r].ex[i][f]=v; if(f==="reps"){ const m=String(v).match(/\d+/); if(m) plans[p].routines[r].ex[i].rep=parseInt(m[0]); } persistData(); }
-function delEx(p,r,i){ if(!confirm("למחוק את התרגיל?")) return; plans[p].routines[r].ex.splice(i,1); persistData(); renderEditor(); }
-function addEx(p,r){ plans[p].routines[r].ex.push({n:"תרגיל חדש",sets:3,reps:"10",w:20,rep:10,rest:60,note:""}); persistData(); renderEditor(); }
+function delEx(p,r,i){ if(!confirm("Delete this exercise?")) return; plans[p].routines[r].ex.splice(i,1); persistData(); renderEditor(); }
+function addEx(p,r){ plans[p].routines[r].ex.push({n:"New Exercise",sets:3,reps:"10",w:20,rep:10,rest:60,note:""}); persistData(); renderEditor(); }
 function addRoutine(){
   const p=$("editPlanSel").value||activePlan;
-  const name=prompt("שם האימון החדש (למשל Push):","");
+  const name=prompt("Name of the new routine (e.g. Push):","");
   if(name===null) return;
   /* letters already used in this plan's history stay reserved — reusing one
      would re-attribute the old routine's workouts to the new routine */
@@ -501,20 +635,20 @@ function addRoutine(){
   history.forEach(h=>{ if(h.plan===p && h.routine) used.add(h.routine); });
   let letter=null;
   for(let i=0;i<26;i++){ const c=String.fromCharCode(65+i); if(!used.has(c)){ letter=c; break; } }
-  if(!letter){ toast("אי אפשר להוסיף — כל האותיות תפוסות (כולל אותיות עם היסטוריה)", true); return; }
+  if(!letter){ toast("Can't add — all letters are taken (including letters with history)", true); return; }
   plans[p].routines[letter]={name:name.trim(), ex:[]};
   persistData(); renderEditor();
   if(p===activePlan){
     if(!session.start) currentRoutine=letter;
     renderWorkout(); updateStatus();
   }
-  toast("נוסף אימון "+letter+(name.trim()?" · "+name.trim():""));
+  toast("Added routine "+letter+(name.trim()?" · "+name.trim():""));
 }
 function delRoutine(p,r){
   const rt=plans[p].routines[r]; if(!rt) return;
-  if(routineKeys(p).length<=1){ toast("אי אפשר למחוק את האימון האחרון בתוכנית", true); return; }
-  if(session.start && p===activePlan){ toast("יש אימון פתוח — סיים אותו לפני מחיקת אימונים", true); return; }
-  if(!confirm("למחוק את אימון "+r+(rt.name?" ("+rt.name+")":"")+" על "+rt.ex.length+" התרגילים שבו? ההיסטוריה נשמרת.")) return;
+  if(routineKeys(p).length<=1){ toast("Can't delete the last routine in a plan", true); return; }
+  if(session.start && p===activePlan){ toast("A workout is open — finish it before deleting routines", true); return; }
+  if(!confirm("Delete routine "+r+(rt.name?" ("+rt.name+")":"")+" and its "+rt.ex.length+" exercises? History is kept.")) return;
   delete plans[p].routines[r];
   persistData(); renderEditor();
   if(p===activePlan){
@@ -522,10 +656,10 @@ function delRoutine(p,r){
     if(currentRoutine===r) currentRoutine=firstRoutine();
     renderWorkout(); updateStatus();
   }
-  toast("אימון "+r+" נמחק");
+  toast("Routine "+r+" deleted");
 }
 function addPlan(){
-  const name=prompt("שם התוכנית החדשה:","Routine "+(Object.keys(plans).length+1));
+  const name=prompt("New plan name:","Routine "+(Object.keys(plans).length+1));
   if(!name) return;
   const id="p"+Date.now();
   plans[id]={name, routines:{A:{name:"", ex:[]}}};
@@ -546,7 +680,7 @@ async function shareOrDownload(blob, fname, mime){
   download(blob, fname);
 }
 async function exportCSV(){
-  if(!history.length){ toast("אין אימונים לייצוא", true); return; }
+  if(!history.length){ toast("No workouts to export", true); return; }
   let csv="Date,Plan,Workout,Duration_min,Exercise,Set,Weight_kg,Reps\n";
   history.forEach(w=>w.entries.forEach(e=>e.sets.forEach((s,i)=>{
     const planName=plans[w.plan]?plans[w.plan].name:w.plan;
@@ -568,7 +702,7 @@ function importJSON(file){
         && Object.values(d.plans).every(pl=>pl && pl.routines && typeof pl.routines==="object"
              && Object.keys(pl.routines).length>0 && Object.values(pl.routines).every(rt=>rt && Array.isArray(rt.ex)));
       if(!plansOk || !Array.isArray(d.history)) throw new Error();
-      if(!confirm("לשחזר מהגיבוי? זה מחליף את כל הנתונים הנוכחיים"+(session.start?" ומבטל את האימון הפתוח":"")+".")) return;
+      if(!confirm("Restore from this backup? It replaces all current data"+(session.start?" and discards the open workout":"")+".")) return;
       plans=d.plans;
       activePlan=(d.activePlan && plans[d.activePlan])?d.activePlan:Object.keys(plans).sort()[0];
       restCfg=d.restCfg||{}; history=d.history;
@@ -578,9 +712,9 @@ function importJSON(file){
       await store.set(DATA,{plans,activePlan,restCfg});
       await store.set(LOG,history);
       currentRoutine=nextRoutine();
-      toast("שוחזר: "+history.length+" אימונים");
+      toast("Restored: "+history.length+" workouts");
       renderPlanSelects(); renderEditor(); renderWorkout(); updateStatus();
-    }catch(e){ toast("קובץ לא תקין", true); }
+    }catch(e){ toast("Invalid file", true); }
   };
   fr.readAsText(file);
 }
@@ -626,9 +760,9 @@ function importHevy(file){
       history=history.concat(imported).sort((a,b)=>a.date<b.date?-1:1);
       const ok=await store.set(LOG,history);
       if(!ok) throw new Error();
-      toast("יובאו "+imported.length+" אימונים מ-Hevy");
+      toast("Imported "+imported.length+" workouts from Hevy");
       renderWorkout();
-    }catch(e){ toast("ייבוא נכשל — ודא שזה קובץ ייצוא של Hevy", true); }
+    }catch(e){ toast("Import failed — make sure this is a Hevy export file", true); }
   };
   fr.readAsText(file);
 }
