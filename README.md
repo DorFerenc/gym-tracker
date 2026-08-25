@@ -14,7 +14,9 @@ Personal workout tracker PWA (English UI) + MCP server for AI access.
    Already have data? **Manage → Restore JSON** imports a `gym-backup.json` and replaces everything.
 3. Training (**Workout** tab): the app suggests the next routine in rotation and pre-fills each exercise
    with what you lifted last time. Type weight/reps, hit **✓** per set — the rest timer starts itself
-   (beep + vibration when done). A progress bar tracks the sets left in the routine.
+   (beep + vibration when done). **+ Set** adds a set for the session and **− Set** takes the last one
+   back (it asks first if that set is already checked off); neither changes the plan itself.
+   A progress bar tracks the sets left in the routine.
    **Finish & Save Workout** saves the session; an unfinished session survives closing the app and is
    restored on the next open.
 4. **History** tab: every saved workout with all sets; expand to view or delete.
