@@ -24,12 +24,22 @@ Personal workout tracker PWA (English UI) + MCP server for AI access.
    of all sets, **Import Hevy CSV** = migrate from the Hevy app.
 
 ### During a workout
-- **i** on any exercise opens a guide: the muscles worked, step-by-step form cues, and a built-in
-  animated demo of the movement. Links to video/GIF searches are there for a real-footage demo.
+- **Coach** sits at the top of the workout: tap it for today's call, read from your own logged
+  history — go up in weight where you cleared every rep last time, add volume where a lift has
+  stalled, hold and chase reps where you didn't. Each suggestion has an **Approve** button that
+  applies it to today's session only (never to your plan), plus a motivation line based on your
+  streak and time off. It runs entirely on the phone: the app is a static page with no server, so
+  there is no model call and nothing leaves the device — the MCP server is the route to a real LLM
+  over the same data.
+- **i** on any exercise opens a guide: the muscles worked, step-by-step form cues, and a photo demo
+  of the movement (two frames cross-faded, so you see the start and end position). Links to
+  video/GIF searches are there for full-motion footage.
 - **⇄** suggests alternatives that train the same muscles a different way (different angle or
-  equipment), each with a one-line reason. Swapping edits the routine in place — history is kept
-  under the old name, and the same button swaps back.
-- **+ Add exercise** adds one mid-session, from the 44-exercise catalog (searchable, grouped by
+  equipment), each with a one-line reason, ranked so the **top three picks** come first — closest
+  stimulus, then general quality, then whether it uses the station you're already at and whether
+  you've lifted it before. Swapping edits the routine in place — history is kept under the old
+  name, and the same button swaps back.
+- **+ Add exercise** adds one mid-session, from the 62-exercise catalog (searchable, grouped by
   equipment) or as a custom name. It stays in the routine; remove it later in Manage.
 - **⇅ Plan order / Gym order** regroups the routine by equipment zone — barbell & rack, dumbbells,
   machines, cables, pull-up & bodyweight, mat & core — so you finish one station before moving on
@@ -56,11 +66,15 @@ self-contained `index.html`, no build step.
 - Everything you type is auto-saved in the background: the in-progress workout draft is written on
   every change and flushed the moment the app is hidden or closed, and a rolling safety snapshot is
   kept after every saved workout and before every restore/delete (Manage → Restore auto-backup).
-- The exercise demo animations are drawn by the app itself (inline SVG), not fetched. Nothing is
-  hotlinked, so the app makes **zero** external requests: the CSP is `default-src 'none'` with
-  images limited to `'self' data:`, and the service worker only handles same-origin GET requests.
-  Earlier versions hotlinked GIFs from a fitness site; that needed an external origin in the CSP and
-  broke whenever a URL moved, so the animations were brought in-house.
+- The only external requests are the exercise demo photos, fetched from the open-source
+  `yuhonas/free-exercise-db` repository on GitHub, pinned to one immutable commit so the image
+  bytes can't be changed later (every URL was verified before shipping). They
+  load only when you open a guide sheet, are sent with no referrer, and the CSP pins images to
+  `'self' data: https://raw.githubusercontent.com` — nothing else can be loaded, and
+  `connect-src 'self'` still blocks all scripted network calls. If the photos can't load (offline,
+  or a slow link — there's a 6s timeout), the sheet falls back to an inline-SVG animation the app
+  draws itself, so the guide still works with no network at all.
+- The service worker only handles same-origin GET requests, so the photos are never cached by it.
 - The only outbound links are the optional "Video demos"/"More GIFs" buttons in the guide sheet,
   which open a YouTube/Google search in a new tab and are never loaded automatically.
 - The site sends no referrer and carries a `noindex` meta tag asking search engines not to index it.
