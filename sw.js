@@ -1,4 +1,4 @@
-const CACHE = "gym-v7";
+const CACHE = "gym-v8";
 const SHELL = ["./", "./index.html", "./manifest.json"];
 self.addEventListener("install", e => {
   // cache:"reload" bypasses the HTTP cache so a new SW never precaches a stale shell

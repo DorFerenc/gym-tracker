@@ -28,9 +28,11 @@ Personal workout tracker PWA (English UI) + MCP server for AI access.
   history — go up in weight where you cleared every rep last time, add volume where a lift has
   stalled, hold and chase reps where you didn't. Each suggestion has an **Approve** button that
   applies it to today's session only (never to your plan), plus a motivation line based on your
-  streak and time off. It runs entirely on the phone: the app is a static page with no server, so
-  there is no model call and nothing leaves the device — the MCP server is the route to a real LLM
-  over the same data.
+  streak and time off. This part runs entirely on the phone — no network, no key, works offline.
+- **Ask the coach** (optional): add your own Anthropic API key in **Manage → AI Coach** and the
+  coach sheet gains a question box and quick chips (pep talk / my progress / focus today). Your
+  question plus a digest of your training log goes to the Claude API and the reply comes back in
+  the sheet. Details in Privacy below — read them before you turn it on.
 - **i** on any exercise opens a guide: the muscles worked, step-by-step form cues, and a photo demo
   of the movement (two frames cross-faded, so you see the start and end position). Links to
   video/GIF searches are there for full-motion footage.
@@ -59,7 +61,8 @@ self-contained `index.html`, no build step.
 
 ## Privacy
 - All workout data lives only in the user's own browser storage (localStorage) on their device.
-  The site is static: no server, no accounts, no analytics, no cookies, no network calls with user data.
+  The site is static: no server, no accounts, no analytics, no cookies. The only time workout data
+  leaves the device is when you opt into the AI coach and press Ask — see below.
 - The app ships with an empty plan — no personal data is embedded in the code or visible to other visitors.
   Each visitor's data is theirs alone; backup/restore is a local JSON file the user downloads/uploads.
 - `gym-backup.json` (the exported data) is gitignored and must never be committed.
@@ -70,11 +73,31 @@ self-contained `index.html`, no build step.
   `yuhonas/free-exercise-db` repository on GitHub, pinned to one immutable commit so the image
   bytes can't be changed later (every URL was verified before shipping). They
   load only when you open a guide sheet, are sent with no referrer, and the CSP pins images to
-  `'self' data: https://raw.githubusercontent.com` — nothing else can be loaded, and
-  `connect-src 'self'` still blocks all scripted network calls. If the photos can't load (offline,
+  `'self' data: https://raw.githubusercontent.com` — nothing else can be loaded. `connect-src` is
+  `'self' https://api.anthropic.com`, so the only scripted request the page can make is the opt-in
+  coach call below; every other origin is blocked. If the photos can't load (offline,
   or a slow link — there's a 6s timeout), the sheet falls back to an inline-SVG animation the app
   draws itself, so the guide still works with no network at all.
-- The service worker only handles same-origin GET requests, so the photos are never cached by it.
+- The service worker only handles same-origin GET requests, so neither the photos nor the API call
+  are cached or intercepted by it.
+- **The AI coach is off by default and opt-in.** With no key, nothing is ever sent anywhere and the
+  rules-based coach works offline. If you add a key:
+  - The key is stored in this browser's localStorage only. It is never put in a URL, never written
+    to the JSON/CSV exports or the auto-backup snapshot, and never shown on screen after saving.
+    Anyone with the unlocked phone (or a browser exploit on this origin) could read it — treat it
+    like any password on the device, and remove it from **Manage → AI Coach** when you're done.
+  - **Worth knowing about GitHub Pages:** browser storage is scoped to the whole origin
+    (`<owner>.github.io`), not to the `/gym-tracker/` path. Any *other* Pages site published under
+    the same GitHub account can therefore read this key. If you host other Pages projects, either
+    put this app on its own custom domain or skip the key and use the MCP server instead.
+  - Prefer a key scoped to its own Anthropic workspace with a spend limit, so a leak is bounded.
+  - Requests go straight from the phone to `api.anthropic.com` with your key, so they are billed to
+    **your** Anthropic account, not to any server of mine — there is no server.
+  - Each question sends a digest of your log: the current routine and its planned exercises, your
+    total workout count, and your last 12 workouts with weights and reps. That is workout data
+    leaving the device — the one place in this app where that happens.
+  - The model's reply is inserted as plain text, never as HTML, and the system prompt tells it to
+    treat the log as data rather than instructions.
 - The only outbound links are the optional "Video demos"/"More GIFs" buttons in the guide sheet,
   which open a YouTube/Google search in a new tab and are never loaded automatically.
 - The site sends no referrer and carries a `noindex` meta tag asking search engines not to index it.
